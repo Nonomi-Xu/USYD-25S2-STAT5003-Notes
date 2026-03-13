@@ -1,0 +1,439 @@
+\subsection{Loading Packages}
+
+\indent 
+
+At the start of your R workshop, load all necessary packages to ensure a smooth session. Here’s an example:
+
+\switchocg{W501}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W501}{0}
+\begin{lstlisting}[language = R]
+library(dplyr)      # Data manipulation
+library(tidyr)      # Tidying data
+library(tidyverse)  # Data science packages
+library(ggplot2)    # Data visualization
+library(here)       # File paths
+library(Rtsne)      # t-SNE for dimensionality reduction
+library(ggpubr)     # Publication-ready plots
+library(Rtsne)      # t-SNE algorithm
+library(gridExtra)
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Movie ratings data}
+
+\indent 
+
+We will be analysing the MovieLens dataset which contains movie ratings of 58,000 movies by 280,000 users. Given its large size, in this workshop, we will focus on the top 40 movies with the most ratings and users who rated at least 20 out of the 40 movies.
+
+\subsubsection{Reading Data}
+
+\indent 
+
+Download the movielens\_top40.csv from Canvas and read into R as movielens. In this case, the data is structured in the opposite of a typical data layout. whereby the variables of interest are the movies and they appear on the rows and the user response values appear as the columns. This is done somewhat intentionally for the distance calculations coming soon that computes the pairwise distances, where the pairing is done by row.
+
+
+\switchocg{W502}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W502}{0}
+\begin{lstlisting}[language = R]
+movielens <- read.csv(here("datasets", "movielens_top40.csv"), header = TRUE)
+dim(movielens)
+\end{lstlisting}
+\end{ocg}
+
+
+\switchocg{W502}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W502}{0}
+\begin{lstlisting}[language = R]
+range(movielens, na.rm = TRUE)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W503}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W503}{0}
+\begin{lstlisting}[language = R]
+head(movielens)
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Hierarchical clustering}
+
+\indent 
+
+Given the large amount of variables, a natural high-dimensional visualization method is to cluster the movies based on different user ratings. We will look at how to do this in R.
+
+\subsubsection{Basic hclust usage}
+
+\indent 
+
+Perform hierarchical clustering using the hclust() function and use plot to graph the resulting dendrogram. Try it with the complete , average and single methods. What can you observe from the hierarchical clustering results processed using different dissimilarity measures?
+
+\switchocg{W504}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W504}{0}
+\begin{lstlisting}[language = R]
+d <- dist(movielens) 
+
+h <- hclust(d) ## default is the complete linkage
+plot(h, cex = 0.4)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W505}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W505}{0}
+\begin{lstlisting}[language = R]
+h_avg <- hclust(d, method = "average")
+
+plot(h_avg, cex = 0.4)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W506}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W506}{0}
+\begin{lstlisting}[language = R]
+h_single <- hclust(d, method = "single") 
+
+plot(h_single, cex = 0.4)
+\end{lstlisting}
+\end{ocg}
+
+Observations on the clustering results:
+
+Complete Linkage: Clusters tend to be more compact and evenly sized, as this method considers the maximum distance between points in different clusters.
+
+Average Linkage: Clusters are balanced between compactness and separation, as it uses the average distance between points in different clusters.
+
+Single Linkage: Clusters can be elongated and less compact, as this method considers the minimum distance between points in different clusters, which can lead to chaining effects.
+
+\subsubsection{Form clusters in hclust}
+
+\indent 
+
+\begin{itemize}
+    \item Use the cutree() function on the output of hclust() using the complete linkage to separate the movie titles into four clusters.
+    \item Can you extract the movies in cluster 1?
+    \item We can also cut the tree by defining a height at which the tree should be cut. Can you find the value of h to cut the tree into four clusters?
+\end{itemize}
+
+\switchocg{W507}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W507}{0}
+\begin{lstlisting}[language = R]
+## use cutree to form four clusters 
+movie_groups <- cutree(h, k = 4) ## using the default complete linkage
+head(movie_groups)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W508}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W508}{0}
+\begin{lstlisting}[language = R]
+table(movie_groups)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W509}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W509}{0}
+\begin{lstlisting}[language = R]
+## split to see the movies in cluster 1
+split(names(movie_groups), movie_groups)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W510}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W510}{0}
+\begin{lstlisting}[language = R]
+split(names(movie_groups), movie_groups)$`1`
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W511}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W511}{0}
+\begin{lstlisting}[language = R]
+## try out different heights 
+table(cutree(h, h = 14)) ## there are 9 clusters if cutting the tree at 14
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W512}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W512}{0}
+\begin{lstlisting}[language = R]
+table(cutree(h, h = 15)) ## there are 7 clusters
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W513}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W513}{0}
+\begin{lstlisting}[language = R]
+table(cutree(h, h = 16)) ## exactly 4 clusters
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W514}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W514}{0}
+\begin{lstlisting}[language = R]
+table(cutree(h, h = 17)) ## only three clusters
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W515}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W515}{0}
+\begin{lstlisting}[language = R]
+cutree(h, h = 16)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W516}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W516}{0}
+\begin{lstlisting}[language = R]
+# Add a horizontal line to the dendrogram to show the cut for 4 clusters
+plot(h)
+abline(h = 16, col = "red", lty = 2)  # Adjust the height (h) value as needed
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Real clustering?}
+
+\indent 
+
+You may have noticed that not every movie has a rating from every user, resulting in some NA values in the dataset. This is expected since no one could have possibly watched every movie. One question you might ask is whether the clustering result is based on the actual rating values (ranging from 1 to 5 stars) or simply on the presence of a rating.
+
+To investigate this, follow these steps:
+
+\step Create a New Dataset movielens\_mat: Replace all missing ratings (NAs) with 0. Replace all existing ratings (regardless of their value) with 1.
+
+\step Perform Hierarchical Clustering: Use the new dataset to perform hierarchical clustering with the Manhattan distance.
+
+\step Find Clusters: Use the cutree function to identify 4 clusters.
+
+\step Compare Results: Compare these clusters to the results obtained in the previous question.
+
+\switchocg{W517}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W517}{0}
+\begin{lstlisting}[language = R]
+#| echo: true
+#| code-fold: true
+#| message: false
+
+
+movielens_mat <- as.matrix(movielens)
+movielens_mat[is.na(movielens_mat)] <- 0
+movielens_mat[movielens_mat > 0] <- 1
+
+d_man <- dist(movielens_mat, method = "manhattan")
+h_man <- hclust(d_man)
+plot(h_man, cex = 0.5)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W518}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W518}{0}
+\begin{lstlisting}[language = R]
+movie_groups_man <- cutree(h_man, k = 4)
+
+table(movie_groups_man)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W519}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W519}{0}
+\begin{lstlisting}[language = R]
+table(movie_groups)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W520}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W520}{0}
+\begin{lstlisting}[language = R]
+## the results show that even if we replace all the rated movies with a rating of 1 and replace all the non-rated movies with a rating of 0, there still appear to be 4 distinct groups (though the group memberships differ with the first approach) and thus it suggests that the clustering is not based on the existence of a rating.
+
+## compare movies in the first cluster 
+## split to see the movies in cluster 1
+
+split(names(movie_groups), movie_groups)$`1`
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W521}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W521}{0}
+\begin{lstlisting}[language = R]
+split(names(movie_groups_man), movie_groups_man)$`1`
+\end{lstlisting}
+\end{ocg}
+
+\subsection{K-means}
+
+\subsubsection{Basic $k$-means usage}
+
+\indent 
+
+Next, let’s explore the kmeans method. Use the original movielens data, let’s now make a new dataset named movielens\_mat replacing all the NAs with 0 but keep the ratings. We are doing this because the kmeans function cannot handle missing values. In a later module, we will look at how to handle missing values. Use kmeans to cluster the movies into four clusters. How many movies are in each cluster?
+
+\switchocg{W522}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W522}{0}
+\begin{lstlisting}[language = R]
+movielens_mat <- as.matrix(movielens)
+movielens_mat[is.na(movielens_mat)] <- 0
+kmeans_res <- kmeans(movielens_mat, centers = 4)
+
+names(kmeans_res) ## extract the cluster variable 
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W523}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W523}{0}
+\begin{lstlisting}[language = R]
+table(kmeans_res$cluster)
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Visualization}
+
+\indent 
+
+\step Use the prcomp function to perform PCA on the movielens\_mat matrix, scaling the data to ensure each feature contributes equally to the analysis.
+
+\step Create a data frame movie.df containing the first two principal components (PC1 and PC2) and the cluster labels obtained from k-means clustering.
+
+\step Use ggplot to create a scatter plot of the first two principal components, coloring the points by their cluster labels.
+
+\switchocg{W524}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W524}{0}
+\begin{lstlisting}[language = R]
+library(ggthemes)
+
+movie_pc <- prcomp(movielens_mat, scale = TRUE)
+
+movie.df <- data.frame(PC1 = movie_pc$x[,1], PC2 = movie_pc$x[,2],
+                      labels = factor(kmeans_res$cluster))
+
+ggplot(movie.df, aes(PC1, PC2, colour = labels)) + geom_point() + theme_minimal() +
+  scale_colour_colorblind()
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Author by word count}
+
+\indent 
+
+The dataset author\_count.csv shows the counts of common words appearing in documents by four authors, Jane Austen, Jack London, William Shakespeare and John Milton. We like to investigate whether clustering based word characteristics is able to split the four authors apart. Here the first column shows the author, the remaining columns show the counts of each word.
+
+\subsubsection{PCA}
+
+\indent 
+
+Run the following code to visualize the first two principal components (PCs), with points color-coded by author. Identify which author has the highest score in PC2.
+
+\switchocg{W525}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W525}{0}
+\begin{lstlisting}[language = R]
+author.dat <- read.csv(here("datasets", "author_count.csv"), header = TRUE)
+## remove the first column showing the author & use the remaining numeric values to perform PCA
+numeric.dat <- author.dat[,-1]
+authors <- factor(author.dat[[1]])
+
+pca.scaled <- prcomp(numeric.dat, scale = TRUE) ## it is important to set scale = TRUE, but why?
+
+author.df <- data.frame(PC1 = pca.scaled$x[,1], PC2 = pca.scaled$x[,2],
+                        labels = authors)
+
+pca.plot <- ggplot(author.df, aes(PC1, PC2, col =  labels )) + geom_point() + theme_minimal()
+pca.plot
+\end{lstlisting}
+\end{ocg}
+
+It appears that Jane Austen has the highest score in PC2.
+
+\subsubsection{$t$-SNE}
+
+\indent 
+
+Compute and view the (t)-SNE plots for various perplexity levels for the author data.
+
+\step Set the perplexity level to 5.
+
+\step Read the Help file (?Rtsne) to understand what perplexity is doing when running TSNE.
+
+\step Modify the code to set the perplexity level to 10, 30 and 50, and briefly comments on the differences.
+
+\switchocg{W526}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W526}{0}
+\begin{lstlisting}[language = R]
+set.seed(5003)
+
+author_tsne <- Rtsne(author.dat[-1], dims = 2, perplexity = 5)$Y
+
+
+# Create a data frame with the t-SNE results and author information
+tsne_data <- data.frame(x = author_tsne[, 1], y = author_tsne[, 2], Author = authors)
+
+
+
+# Plot the t-SNE results for setting perplexity to 5
+ggplot(tsne_data, aes(x = x, y = y, color = Author)) +
+  geom_point() +
+  labs(title = "t-SNE Visualization (Perplexity = 5)", x = "t-SNE 1", y = "t-SNE 2") +
+  theme_minimal()
+\end{lstlisting}
+\end{ocg}
+
+Use a loop to create 4 t-SNE plots via a loop
+
+\switchocg{W527}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W527}{0}
+\begin{lstlisting}[language = R]
+## use a loop to make the plot 
+perplexities <- c(5, 10, 30, 50)
+
+
+
+
+plots <- list()
+for(i in perplexities){
+  set.seed(5003)
+  author_tsne <- Rtsne(author.dat[,-1], dims = 2, perplexity = i)$Y
+  
+  tsne_data <- data.frame(x = author_tsne[, 1], y = author_tsne[, 2], Author = authors)
+
+  plots[[paste0("Perp_", i)]] <- ggplot(tsne_data, aes(x = x, y = y, color = Author)) +
+    geom_point() +
+    labs(title = paste("t-SNE Visualization (Perplexity =", i, ")"),
+         x = "t-SNE 1", y = "t-SNE 2") +
+    theme_minimal()
+}
+
+# Display all 4 plots
+do.call(grid.arrange, c(plots, ncol = 2))
+\end{lstlisting}
+\end{ocg}
+
+Interpretation:
+
+Low Perplexity: Focuses more on local data structure, capturing fine details. However, it might miss the broader structure and can lead to more scattered points.
+
+High Perplexity: Emphasizes global data structure, capturing overall patterns. Clusters will tend to shrink into denser structures. This can result in clearer, more defined clusters, but might overlook finer details.

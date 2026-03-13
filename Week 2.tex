@@ -1,0 +1,259 @@
+\subsection{Statistical Learning}
+
+\noindent\textbf{Statistical learning}: A field within statistics that focuses on \textbf{building models} to \textbf{make predictions or inferences}.
+
+\noindent\textbf{Supervised Learning}: Given a dataset with features/predictors $(X_1,X_2,...,X_p)$ and a target outcome variable $(Y)$, the goal is to learn a model $f(X_1,...,X_p)$ to explain/predict the target.
+
+\noindent\textbf{Unsupervised Learning}: Given a dataset with features $(X_1,X_2,...,X_p)$ the goal is to visualise, find patterns, subgroups/clusters within the data.
+
+\subsubsection{Supervised Learning}
+
+\noindent\textbf{Regression}: $Y = f(X)+\epsilon$.
+
+$\epsilon$ is the irreducible error.
+
+The main task is to use the sample to estimate $f(X)$.
+
+\noindent\textbf{Parametric regression}: $f(X) = \beta_0+\beta_1 X_{i1}+...+\beta_p X_{ip}$
+
+\noindent\textbf{Non-parametric regression}:
+
+\begin{itemize}
+    \item Does not make explicit assumption about the function form about $f(X)$.
+    \item Assumes $f(X)$ is a smooth function that fits the data well.
+\end{itemize}
+
+\subsection{Simple Linear Regression}
+
+\begin{align*}
+    Y = f(X)+\epsilon = \beta_0+\beta_1 X+\epsilon
+\end{align*}
+
+\begin{itemize}
+    \item $X$ is the predictor (feature or independent variable).
+    \item $Y$ is the response (target or dependent variable).
+    \item $\beta_0$ is the intercept of the regression line. Expected value of $Y$ when $X=0$.
+    \item $\beta_1$ is the slope of the regression line. Mean increase in $Y$ for a unit increase in $X$.
+    \item $\epsilon$ is the irreducible or random error. Classically assumed to be normally distributed with mean zero and finite variance
+\end{itemize}
+
+\subsubsection{Criterion to Measure the Notion}
+
+\indent 
+
+Easiest mathematical solution is the least squares criterion.
+
+\begin{itemize}
+    \item Let $\hat{y_i}$ be the estimated mean of $Y$ given $X=x_i$.
+    \item Minimise the residual sum of squares $\text{RSS} = \sum_{i=1}^{n}(y_i - \hat{y_i})^2 = \sum_{i=1}^{n}e_i^2$.
+    \item Recall we assume the noises are iid; if the variance of the residual term varies widely, we have the heteroskedastic issue.
+\end{itemize}
+
+\subsubsection{Least Squares Equations}
+
+\noindent\textbf{Regression (slope) coefficient}:
+
+\begin{align*}
+    b_1 = \frac{\sum_{i=1}^{n}(x_i - \bar{x})(y_i - \bar{y})}{\sum_{i=1}^{n}(x_i-\bar{x})^2} = \frac{\text{Cov}(x,y)}{\text{Var}(x)}
+\end{align*}
+
+\noindent\textbf{Intercept}: $b_0 = \bar{y}-b_1 x$
+
+\noindent\textbf{The estimated regression line}:
+
+\begin{align*}
+    \bar{y} = \widehat{f(x)} = b_0 + b_1 x
+\end{align*}
+
+Under conditions below, the least square estimator is the best linear unbiased estimator
+
+\begin{itemize}
+    \item Linearity, no multicollinearity, strict exogeneity
+    \item Normal distributed errors (more generally, spherical errors)
+\end{itemize}
+
+\subsection{Basic uses of Simple Linear Regression}
+
+\subsubsection{Standard error of sample mean}
+
+\indent
+
+Consider a single population estimation problem, wish to estimate some mean, $\mu$ of some random variable $Y$.
+
+If $Y_1,...,Y_n$ are sampled then $\hat{\mu} = \bar{Y}=\sum_{i=1}^{n}Y_i/n$ is an estimator of $\mu$ with:
+
+\begin{align*}
+    \text{Var}(\hat{\mu})=(\text{SE}(\hat{\mu}))^2 = \frac{\sigma^2}{n}
+\end{align*}
+
+\subsubsection{Standard error of regression coefficient estimates}
+
+\indent 
+
+Same concept applies to the regression estimates:
+
+\begin{align*}
+    & \text{SE}(\widehat{\beta_0}) = \sigma\sqrt{\frac{1}{n}+\frac{\bar{x}^2}{\sum_{i=1}^{n}(x_i-\bar{x})^2}}\\
+    & \text{SE}(\widehat{\beta_1})= \frac{\sigma}{\sqrt{\sum_{i=1}^{n}(x_i-\bar{x})^2}}
+\end{align*}
+
+where $\sigma ^2 = \text{Var}(\epsilon)$
+
+As $n\xrightarrow[]{}\infty$, $\text{SE}(\widehat{\beta_0})\xrightarrow{}0$, $\text{SE}(\widehat{\beta_1})\xrightarrow{}0$.
+
+Interestingly, if the $x_i$ are more spread out, the standard errors will be smaller (more leverage to estimate the parameters).
+
+\subsubsection{Assessing the Model Fit–Goodness of fit statistic}
+
+\indent 
+
+Goodness of fit is measured by the coefficient of determination or $R^2$
+
+\begin{align*}
+    R^2 &= \frac{\text{SST} - \text{SSR}}{\text{SST}} = \frac{\text{SSE}}{\text{SST}}\\
+     & = \frac{\sum_{i=1}^n(y_i - \bar{y})^2-\sum_{i=1}^{n}(y_i - \hat{y_i})^2}{\sum_{i=1}^n(y_i-\bar{y})^2}
+\end{align*}
+
+$R^2$ is a measure between 0 and 1 for the training dataset. It measures the proportion of variation in the response $Y$, explained by the linear regression on $X$.
+
+\begin{itemize}
+    \item $R^2 = 0$ indicates none of the variance in $Y$ can be explained linearly by $X$.
+    \item $R^2 = 1$ indicates all of the variance in $Y$ can be explained linearly by $X$.
+\end{itemize}
+
+$R^2$ is \textbf{NOT suggested} (or at least not used as the only metric) for evaluating nonlinear models (introduced in subsequent weeks). Because Total Sum of Squares is NOT the summation of Residual Sum of Squares and Explained Sum of Squares for nonlinear models.
+
+\subsection{Extending Simple Linear Regression}
+
+\begin{align*}
+    \text{Example}: Y = \beta_0+\beta_1X_1+\beta X_1 X_2 + \beta_3 X_2 +...
+\end{align*}
+
+Sometimes it is the case that an interaction term has a very small $p$-value, but the associated main effects do not.
+
+\textbf{The hierarchy principle}: If we include an interaction in a model, we should also include the main effects, even if the $p$-values associated with their coefficients are not significant.
+
+\subsubsection{Multiple linear regression}
+
+\indent 
+
+Simple linear (single variable) regression can be extended to multiple predictors:
+
+\begin{align*}
+    Y = \beta_0 +\beta_1X_1+\beta_2X_2+\beta_3X_3+...+\beta_pX_p+\epsilon
+\end{align*}
+
+The interpretation is the $\beta_p$ coefficient denotes the average increase/decrease in $Y$ for each single unit increase in $X_p$, holding all the other predictors fixed.
+
+\textbf{Claims of causality} should be avoided for observational data.
+
+\subsection{Nonparametric regression or Smoothing}
+
+\subsubsection{Parametric vs non-parametric methods}
+
+\begin{itemize}
+    \item \textbf{Parametric methods} involve selecting a statistical model (e.g. linear regression model) and fitting the parameters of the model (e.g. slope, intercept) using the training data.
+    \item \textbf{Nonparametric methods} don’t require selecting a strict model. The data is allowed to speak for itself. However, don’t have easily interpretable parameters
+\end{itemize}
+
+\subsubsection{Data smoothing}
+
+\indent 
+
+With \textbf{predictor-response} data, the random response variable $Y$ is assumed to be a \textbf{non-linear} function of the predictor variable $X$:
+
+\begin{align*}
+    Y = f(X)+\epsilon
+\end{align*}
+
+$f$ is some fixed, non-linear smooth function. $\epsilon$ is a zero-mean random variable. Smoothing is a \textbf{non-parametric method} to estimate $f$.
+
+\subsubsection{Local averaging}
+
+\indent 
+
+Most smoothers (smoothing functions) rely on the concept of local averaging. In contrast, simple linear regression attempts to fit the best global line.
+
+Example: Suppose you want to determine the expectation of response $Y$ conditional on $X=x$. The $Y$ whose corresponding $X=x$ are near $x$ should be averaged with higher weight to attempt to estimate $f(x)$.
+
+A generic local-averaging smoother can be written as:
+
+\begin{align*}
+    \hat{f}(x)=\text{average}(Y|x\in N(x))
+\end{align*}
+
+where \textbf{average} is some generalised averaging operation. $N(x)$ is some neighbourhood of $x$.
+
+\subsubsection{$k$-nearest neighbours and constant-span running mean}
+
+\indent
+
+A simple smoother takes the sample mean of $k$ nearby points
+
+We define $N(x)$ as $x$ itself, the $(k-1)/2$ points whose predictor values are nearest below/above $x$.
+
+This neighbourhood is termed the symmetric nearest neighbourhood, and the smoother is called a \textbf{moving average} or a \textbf{k-nearest neighbours (kNN) smoother}.
+
+The constant-span running-mean smoother can be written as:
+
+\begin{align*}
+    \hat{f}(x) = \text{mean}[Y_j\,\text{such that} \max(i-\frac{k-1}{2},1)\leq j \leq \min(i+\frac{k-1}{2},n)]
+\end{align*}
+
+\subsubsection{Regression splines}
+
+\indent 
+
+Fit piece-wise functions, where each function can be a $d$-dimensional polynomial function.
+
+Constrain the function to be smooth and continuous.
+
+\textbf{Cubic spline} fits cubic polynomial functions, with the constraints: continuous at each knot, continuity of the 1st derivative and continuity of the 2nd derivative.
+
+Advantage of the cubic spline is that the curve looks smooth to the eye, and can be used to fit almost any function.
+
+\subsubsection{Loess}
+
+\indent
+
+Loess is a Locally weighted scatter plot smoothing method.
+
+The \textbf{loess (Local regression) smoother} is a widely used method with good robustness properties.
+
+It is essentially a weighted running-line smoother, except that each local line is fitted using a robust method rather than least squares.
+
+As a result, the smoother is nonlinear.
+
+\textbf{Loess is computationally intensive and require densely sampled data.}
+
+The $span$ parameter in the $loess$ or $geom\_smooth$ functions control the degree of smoothing. A larger span results in more smoothing (less sensitive to local variations).
+
+\subsubsection{Local regression}
+
+\indent
+
+Fitting local linear fits that are weighted.
+
+Formula for local constant fit is:
+
+\begin{align*}
+    \hat{f}(x)=\frac{\sum_{i=1}^n YK((X-x)/h)}{\sum_{i=1}^n K((X-x)/h)}
+\end{align*}
+
+where $K$ is a kernel.
+
+\subsection{Nonparametric Smoothing VS Linear Regression}
+
+\noindent\textbf{Advantages of non-parametric smoothing}:
+
+\begin{itemize}
+    \item Can model non-linear functions (e.g. splines, loess)
+    \item Does not make any assumption about the functional form of the data
+\end{itemize}
+
+\noindent\textbf{Advantages of linear regression}
+
+\begin{itemize}
+    \item Computationally efficient, even for multivariate linear regression
+    \item Model is interpretable, i.e. one can know the statistical meaning of the estimated slope parameters
+\end{itemize}

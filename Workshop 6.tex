@@ -1,0 +1,557 @@
+\subsection{Loading Packages}
+
+\indent 
+
+At the start of your R workshop, load all necessary packages to ensure a smooth session. Here’s an example.
+
+\switchocg{W601}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W601}{0}
+\begin{lstlisting}[language = R]
+library(dplyr)      # Data manipulation
+library(tidyr)      # Tidying data
+library(tidyverse)  # Data science packages
+library(ggplot2)    # Data visualization
+library(here)       # File paths
+# install.packages("rsample")
+library(rsample)    # alternative to caret package to split between the training and test sets
+# install.packages("ggthemes")
+library(ggthemes)   # to produce color-blind friendly graphs 
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Workshop preparation}
+
+\indent
+
+This week, we will apply four classifiers using the PimaIndiansDiabetes dataset, which is included in the mlbench package. First, you will need to install the mlbench package. To load the data, follow these steps:
+
+\subsubsection{Install and load the dataset}
+
+\switchocg{W602}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W602}{0}
+\begin{lstlisting}[language = R]
+# Install the mlbench package if you haven't already
+#install.packages("mlbench")
+
+# Load the mlbench package
+library(mlbench)
+# Load the PimaIndiansDiabetes dataset
+data(PimaIndiansDiabetes2)
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{EDA pima Indians Diabetes Data}
+
+\indent 
+
+Inspect the PimaIndiansDiabetes2 and verify its structure. It should have 9 columns, 8 of those being numeric features and a single class label variable. If any missing data is observed, discard it and assign it to an object complete.pimas. You may use ?na.omit or ?drop\_na().
+
+For the rest of the workshop, we will use the complete.pimas.
+
+\switchocg{W603}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W603}{0}
+\begin{lstlisting}[language = R]
+dim(PimaIndiansDiabetes2)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W604}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W604}{0}
+\begin{lstlisting}[language = R]
+str(PimaIndiansDiabetes2)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W605}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W605}{0}
+\begin{lstlisting}[language = R]
+## using base R functions 
+## Discard any NA observations
+complete.pimas <- na.omit(PimaIndiansDiabetes2)
+
+## Verify if all NAs have been removed
+
+# Check if there are any NAs in the dataframe
+any(is.na(complete.pimas))
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W606}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W606}{0}
+\begin{lstlisting}[language = R]
+# Check for NAs in each column
+colSums(is.na(complete.pimas))
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W607}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W607}{0}
+\begin{lstlisting}[language = R]
+## discard any NA obs
+complete.pimas <- PimaIndiansDiabetes2 |> drop_na()
+
+## verify if all the NAs have been removed 
+
+# Check for NAs in the dataframe using is.na()
+complete.pimas |>
+  is.na() |>
+  any()
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W608}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W608}{0}
+\begin{lstlisting}[language = R]
+# Check for NAs in each column using dplyr
+complete.pimas |> 
+  summarise_all(~ sum(is.na(.)))
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Logistic Regression}
+
+\subsubsection{Classification}
+
+\indent 
+
+Use glm() to perform logistic regression on complete.pimas to classify observations as positive or negative for diabetes.
+
+In particular, determine which of the features seem the most informative to explain the diabetes class.
+
+\switchocg{W609}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W609}{0}
+\begin{lstlisting}[language = R]
+logit.model <- glm(diabetes ~ ., data = complete.pimas,
+                   family = binomial(link = "logit"))
+summary(logit.model)
+\end{lstlisting}
+\end{ocg}
+
+Based on the p-value, it seems that glucose provides the most information explaining diabetes’ status.
+
+Optional: The code below extracts out the p-values for the predictors fitted on a simple logistic regression where there is only one predictor in each case. i.e. it runs a separate logistic regression for each predictor. We can see that glucose has a p-value that is zero to 19 decimal places.
+
+\switchocg{W610}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W610}{0}
+\begin{lstlisting}[language = R]
+library(broom) ## using the broom package to print out tidy model outputs
+predictors <- names(complete.pimas)[-9] ## where the last column is the class label
+
+for(i in predictors){
+  formula <- as.formula(paste("diabetes~", i))
+  model <- glm(formula, family = "binomial", data = complete.pimas)
+  print(tidy(model))
+  
+ 
+}
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Computing the accuracy}
+
+\indent 
+
+The glm function returns a list variable consisting of the model parameters and fitted values. These can be accessed using the \$ function. Here, we can extract these values using logit.model\$fitted.values.
+
+For classification purposes, we assign observations with probabilities greater than 0.5 as positive and those with probabilities less than or equal to 0.5 as negative. Compute the accuracy of the logistic regression classifier across the entire training data set.
+
+\switchocg{W611}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W611}{0}
+\begin{lstlisting}[language = R]
+logit.decision <- ifelse(logit.model$fitted.values > 0.5, "pos", "neg")
+logit.accuracy <- mean(logit.decision == complete.pimas$diabetes, na.rm = TRUE) * 100
+logit.accuracy
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Classifier comparisons}
+
+\indent 
+
+Install and load the caret package. Use the caret package for this question. The caret package is an R package which simplifies the code for building and testing machine learning classifiers in R.
+
+\switchocg{W612}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W612}{0}
+\begin{lstlisting}[language = R]
+## install.packages("caret")
+library(caret)
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Partition the data}
+
+\indent 
+
+The createDataPartition function in the caret package can be used to partition datasets. Refer to its help file (?createDataPartition) for detailed usage. The following code partitions the dataset into 75\% training and 25\% test sets.
+
+Set a seed to ensure reproducibility.
+
+\switchocg{W613}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W613}{0}
+\begin{lstlisting}[language = R]
+set.seed(5003)
+
+## extract indices for the obs to be included in the training dataset 
+inTrain <- createDataPartition(complete.pimas$diabetes, p = .75)[[1]]
+
+pimatrain <- complete.pimas[inTrain, ]
+pimatest  <- complete.pimas[-inTrain, ]
+
+## alternatively using the tidyverse syntax 
+
+# Split the data into training and testing sets
+pimatrain <- complete.pimas |>  slice(inTrain)
+pimatest  <- complete.pimas |>  slice(-inTrain)
+
+nrow(pimatest)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W614}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W614}{0}
+\begin{lstlisting}[language = R]
+## alternatively using the [rsample] package to split the data into training and test sets 
+## install.packages("rsample")
+library(rsample)
+
+set.seed(5003)
+
+complete.pimas.split <- initial_split(complete.pimas, prop = 0.75)
+
+pimatrain <- training(complete.pimas.split)
+
+pimatest <- testing(complete.pimas.split)
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Train classifiers}
+
+Using the training dataset and all provided features, train four classifiers: logistic regression, linear discriminant analysis (LDA), k-nearest neighbors (kNN), and support vector machine (SVM). This can be achieved using the caret package by specifying the appropriate method argument within the train function.
+
+For the SVM classifier, use method = "svmLinearWeights". A comprehensive list of supported methods can be found here.
+
+After training the models, compute and report the accuracy of each classifier on the training dataset.
+
+Note: The logistic regression example is provided as a reference implementation to help you get started.
+
+\switchocg{W615}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W615}{0}
+\begin{lstlisting}[language = R]
+# Logistic regression
+logit.model <- train(diabetes ~ ., data = pimatrain, method = "glm",
+                     family = binomial(link = "logit"),
+                     trControl = trainControl(method = "repeatedcv", repeats = 5))
+
+## the trainControl function allows you to specify cross-validation (10-fold by default). With repeats = 5, it performs a repeated 10-fold CV to estimate the prediction accuracy within the training data. 
+
+logit.model
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W616}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W616}{0}
+\begin{lstlisting}[language = R]
+# LDA
+lda.model <- train(diabetes ~ ., data = pimatrain, method = "lda",
+                   trControl = trainControl(method = "repeatedcv", repeats = 5))
+lda.model
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W617}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W617}{0}
+\begin{lstlisting}[language = R]
+# knn
+knn.model <- train(diabetes ~ ., data = pimatrain, method = "knn",
+                   trControl = trainControl(method = "repeatedcv", repeats = 5))
+knn.model
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W618}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W618}{0}
+\begin{lstlisting}[language = R]
+# svm
+svm.model <- train(diabetes ~ ., data = pimatrain, method = "svmLinearWeights",
+                   trControl = trainControl(method = "repeatedcv", repeats = 5))
+
+svm.model
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W619}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W619}{0}
+\begin{lstlisting}[language = R]
+# The above code can also be simplified using the purrr::map workflow from tidyverse where it works with list. 
+
+tr.control <- trainControl(method = "repeatedcv", repeats = 5)
+
+# Define the classification methods
+class.methods <- c("glm", "lda", "knn", "svmLinearWeights")
+
+
+# Create a named list of models using purrr::map
+fitted.models <- map(class.methods, ~ {
+  if (.x == "glm") {
+    train(
+      diabetes ~ ., data = pimatrain,
+      method = .x,
+      trControl = tr.control,
+      family = binomial(link = "logit")
+    )
+  } else {
+    train(
+      diabetes ~ ., data = pimatrain,
+      method = .x,
+      trControl = tr.control
+    )
+  }
+})
+
+# Optionally name the list with the method names
+names(fitted.models) <- class.methods
+\end{lstlisting}
+\end{ocg}
+
+You should note that you can pull the accuracy from the model objects by using model\$results. Some models will have several accuracy as caret runs automatic hyperparameter tuning when using the train function, such as for SVM where cost and weight are automatically optimised.
+
+From the training data, it seems that the SVM, LDA and logistic models give the best accuracy at around 77~78\% while the kNN lags behind slightly at 73\%.
+
+\subsubsection{Assess on the test data}
+
+\indent 
+
+Using the trained classification models, classify the test set data and compare their test set accuracy.
+
+An example using the logistic regression is done for you.
+
+\switchocg{W620}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W620}{0}
+\begin{lstlisting}[language = R]
+# using the logistic model trained by the training set to predict the probabilities of the test set data 
+logit.pred <- predict(logit.model, newdata = pimatest)
+
+# use the helper function from caret that computes the classifier metrics
+
+logit.confusion <- confusionMatrix(logit.pred, pimatest$diabetes
+
+                                , positive = "pos")
+
+logit.confusion
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W621}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W621}{0}
+\begin{lstlisting}[language = R]
+## again using the purrr::map 
+
+predictions <- map((fitted.models), ~ predict(.x, newdata = pimatest))
+
+metrics <- map(predictions,  ~ confusionMatrix(.x, pimatest$diabetes))
+
+
+
+names(metrics) <- c("Logistic", "LDA", "kNN", "SVM")
+
+overall <- cbind(Logistic = metrics$Logistic$overall,
+                 LDA = metrics$LDA$overall,
+                 kNN = metrics$kNN$overall,
+                 SVM = metrics$SVM$overall)
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Visualize the boundaries created by the classifiers}
+
+\indent 
+
+Consider only two features (glucose and mass) for the ease of visualization. Construct models using logistic regression and SVM to classify the diabetes response for the entire data complete.pimas.
+
+\subsubsection{Linear decision boundaries}
+
+\indent 
+
+The following code plots mass against glucose, coloring the points by diabetes labels.
+
+\switchocg{W622}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W622}{0}
+\begin{lstlisting}[language = R]
+complete.pimas |> ggplot(aes(mass, glucose, color = diabetes)) +
+  geom_point() +
+  labs(title = "Mass vs Glucose",
+       x = "Mass",
+       y = "Glucose",
+       color = "Diabetes") +
+  theme_minimal()
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Linear decision boundaries}
+
+\indent
+
+Then add to your plot the decision boundaries for logistic regression and linear SVM using only the mass and glucose predictors. (Assume for logistic regression that the decision boundary is determined using a cutoff of 0.5 for the predicted probabilities).
+
+Hint: it requires you to figure out the intercept and the slope for the linear relationship between mass and glucose, assuming a linear relationship: $mass =\beta_0  + \beta_1 \text{glucose}$.
+
+\begin{align*}
+    \log(\frac{p}{1-p}) = \beta_0 + \beta_1X_1+\beta_2X_2
+\end{align*}
+
+As the decision is set to $p = 0.5$, it means that $\log(\frac{p}{1-p}) = 0$. Therefore, by re-arranging,
+
+\begin{align*}
+    \beta_2X_2 = -\beta_0-\beta_1X_1\\
+    X_2 = -\frac{\beta_0}{\beta_2} - \frac{\beta_1X_1}{\beta_2}
+\end{align*}
+
+\switchocg{W623}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W623}{0}
+\begin{lstlisting}[language = R]
+logit.model2 <- glm(diabetes ~ glucose + mass, data = complete.pimas, family = binomial(link = "logit"))
+
+logit.coefs <- coefficients(logit.model2)
+logit.slope <- -logit.coefs["glucose"] / logit.coefs["mass"]
+logit.intercept <- -logit.coefs["(Intercept)"] / logit.coefs["mass"]
+
+plot(mass ~ glucose, data = complete.pimas, col = cols, pch = 16)
+abline(logit.intercept, logit.slope, lwd = 2)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W624}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W624}{0}
+\begin{lstlisting}[language = R]
+# Using the same parameter search as earlier
+svm.model2 <- train(diabetes ~ glucose + mass, data =complete.pimas, method = "svmLinearWeights", scale = FALSE,
+                   trControl = trainControl(method = "repeatedcv", repeats = 5))
+
+svm.coefs.linear <- coef(svm.model2$finalModel)
+svm.linear.slope <- -svm.coefs.linear["glucose"] / svm.coefs.linear["mass"]
+svm.linear.intercept <- -svm.coefs.linear["(Intercept)"] / svm.coefs.linear["mass"]
+cols <- ifelse(complete.pimas$diabetes == "pos", "blue", "red")
+
+plot(mass ~ glucose, data = complete.pimas, col = cols, pch = 16)
+abline(svm.linear.intercept, svm.linear.slope, lwd = 2)
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Non-linear boundaries}
+
+\indent 
+
+The following graphs illustrate the decision boundaries created by the kNN method and the SVM with a radial kernel have been implemented on the pimatrain training data set.
+
+Comment on the differences observed between the two decision boundaries.
+
+\switchocg{W625}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W625}{0}
+\begin{lstlisting}[language = R]
+## code is optional but it is more important to interpret
+viz.knn.model <- train(diabetes ~ glucose + mass, data = pimatrain, method = "knn",
+                       prob = TRUE,
+                       trControl = trainControl(method = "repeatedcv", repeats = 5))
+
+# mapping decision boundary
+relevant.dat <- complete.pimas %>% dplyr::select(mass, glucose)
+grids <- lapply(relevant.dat, function(x) seq(from = min(x), to = max(x), length.out = 128))
+
+viz.dat <- expand.grid(grids)
+
+knn.predictions <- predict(viz.knn.model, viz.dat)
+
+svm.radial.model <- train(diabetes ~ mass + glucose, data = pimatrain,
+                          method = "svmRadialWeights",
+                          trControl = trainControl(method = "repeatedcv", repeats = 5))
+svm.predictions <- predict(svm.radial.model, viz.dat)
+
+par(mfrow = c(1, 2))
+plot(glucose ~ mass, data = complete.pimas, col = cols, pch = 16, 
+     main = "KNN")
+points(viz.dat, col = ifelse(knn.predictions == "neg", "red", "blue"), cex = 0.3, pch = 16)
+plot(glucose ~ mass, data = complete.pimas, col = cols, pch = 16, 
+     main = "SVM")
+points(viz.dat, col = ifelse(svm.predictions == "neg", "red", "blue"), cex = 0.3, pch = 16)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W626}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W626}{0}
+\begin{lstlisting}[language = R]
+## Alternative code that does the same thing with ggplot
+# Extension - we can add in the decision boundaries by creating an additional test set getting the predicted value at every possible pair.
+  
+grid.knn <- expand.grid(glucose = seq(0, 200, length.out = 200),
+                    mass = seq(0, 70, length.out = 200))
+grid.svm <- expand.grid(glucose = seq(0, 200, length.out = 200),
+                    mass = seq(0, 70, length.out = 200))
+
+knn.model.viz <- train(diabetes ~ mass + glucose, data = pimatrain, method = "knn", prob = TRUE, trControl = trainControl(method = "repeatedcv", repeats = 5))
+svm.model.viz <- train(diabetes ~ mass + glucose, data = pimatrain, method = "svmRadialWeights", trControl = trainControl(method = "repeatedcv", repeats = 5))
+
+grid.knn$diabetes <- predict(knn.model.viz, grid.knn)
+grid.svm$diabetes <- predict(svm.model.viz, grid.svm)
+
+complete.pimas |> ggplot(aes(x = glucose, y = mass, fill = diabetes))+
+  geom_raster(data = grid.knn, alpha = 0.5) +
+  geom_point(aes(color = diabetes)) +
+  labs(title = "Mass vs Glucose KNN",
+       x = "Mass",
+       y = "Glucose",
+       color = "Diabetes",
+       fill = "Diabetes") +
+  theme_minimal()+
+  scale_color_colorblind()
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W627}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W627}{0}
+\begin{lstlisting}[language = R]
+complete.pimas |> ggplot(aes(x = glucose, y = mass, fill = diabetes)) +
+  geom_raster(data = grid.svm, alpha = 0.5) +
+  geom_point(aes(color = diabetes)) +
+  labs(title = "Mass vs Glucose SVM",
+       x = "Mass",
+       y = "Glucose",
+       color = "Diabetes",
+       fill = "Diabetes") +
+  theme_minimal() +
+  scale_color_colorblind() ## add to produce graphs that are color-blind friendly
+\end{lstlisting}
+\end{ocg}
+
+Both generated decision regions are nonlinear and non-parametric.
+
+However, the kNN fits is more irregular and has jagged edges. This happens because kNN makes predictions based on the local local majority of nearest neighbors, which can lead to highly localized and detailed classification regions.
+
+The SVM boundary slightly smoother and curved.This is because SVM finds an optimal hyperplane (or curved boundary with an RBF kernel) that maximizes the margin between classes.
+
+Unlike kNN, SVM does not depend on local distributions but rather on a global optimization problem.

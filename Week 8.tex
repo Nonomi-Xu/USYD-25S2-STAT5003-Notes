@@ -1,0 +1,372 @@
+\subsection{Feature Selection - Searching}
+
+\subsubsection{Goals of feature selection}
+
+\indent 
+
+\textbf{Prediction accuracy}: especially when $p\geq n$. $p$ is the number of features, and $n$ is the number of observations.
+
+\textbf{Model interpretability}: Removing irrelevant or poor features (that is, by setting the corresponding coefficient estimates to zero) $\xrightarrow{}$ we can obtain a model that is more easily interpreted.
+
+Some approaches for feature selection are presented.
+
+\subsubsection{Approaches for feature selection}
+
+\indent 
+
+\begin{itemize}
+    \item \textbf{Subset selection}: Identify a subset of the $p$ predictors that we believe to be related to the response or class $y$. Fit a \textbf{classification} or \textbf{regression model} on the reduced set of variables.
+    \item \textbf{Shrinkage}: Primarily used for \textbf{regression models}. Fit a model involving all $p$ predictors. Some estimation coefficients are shrunk towards zero. This shrinkage (also known as regularisation) has the effect of reducing variance and can also be used for feature selection.
+    \item \textbf{Dimension reduction}: We project the $p$ predictors into $M$-dimensional subspace, $M\leq p$.
+\end{itemize}
+
+\subsubsection{Best Subset Selection}
+
+\indent 
+
+Suppose we have a dataset with a response variable $Y$ and three predictors $(X_1,X_2,X_3)$. We want to use \textbf{Best Subset Selection} to find the best model for predicting $Y$.
+
+\step \textbf{Null Model}
+
+This model uses no predictors, only the intercept: $\mathcal{M}_0: Y = \beta_0$
+
+\step \textbf{One-Predictor Models $(k=1)$}
+
+There are $\binom{3}{1} = 3$ possible models:
+
+\begin{align*}
+    \mathcal{M}_{1a}: Y \sim \beta_0 +X_1\\
+    \mathcal{M}_{1b}: Y \sim \beta_0 +X_2\\
+    \mathcal{M}_{1c}: Y \sim \beta_0 +X_3
+\end{align*}
+
+Evaluate each model using metrics such as RSS or $R^2$.
+Select the best one with the smallest RSS or equivalently the largest $R^2$ and denote it $\mathcal{M}_1$.
+
+\step \textbf{Two Predictor Models $(k=2)$}
+
+There are $\binom{3}{2}=3$ models:
+
+\begin{align*}
+    \mathcal{M}_{2a}: Y\sim \beta_0 + X_1+ X_2\\
+    \mathcal{M}_{2b}: Y\sim \beta_0 + X_1+ X_3\\
+    \mathcal{M}_{2c}: Y\sim \beta_0 + X_2+ X_3
+\end{align*}
+
+Select the best one with the smallest RSS or equivalently the largest $R^2$ and denote it $\mathcal{M}_2$.
+
+\step \textbf{Three Predictors $(k=3)$}
+
+Only one model to consider: $\mathcal{M}_3 : Y\sim \beta_0+X_1+X_2+X_3$
+
+\bigskip 
+
+Among these four candidate models, Choose the best $\mathcal{M}_k$ based on model selection criteria:
+
+\begin{itemize}
+    \item Adjusted $R^2$
+    \item AIC/BIC
+    \item Cross-validation error
+\end{itemize}
+
+Cons:
+
+\begin{itemize}
+    \item It can be too computationally expensive to apply best subset selection when $p$ is large. Too many possible feature subsets.
+    \item Statistical problems with large $p$.
+    \item Larger search space $\xrightarrow{}$ increased chance of findings models that overfit (Perform well on training data).
+\end{itemize}
+
+\subsubsection{Forward Stepwise Selection}
+
+\indent 
+
+Forward stepwise selection begins with a model containing no predictors, and then adds predictors to the model, one-at-a-time, until all of the predictors are in the model.
+
+In particular, at each step the variable that gives the greatest additional improvement to the fit is added to the model.
+
+\bigskip
+
+\step \textbf{Null Model}: $\mathcal{M}_0 : Y = \beta_0$
+
+\step Try adding one predictor at a time:
+
+\begin{align*}
+    \mathcal{M}_{1a}: Y \sim \beta_0 +X_1\\
+    \mathcal{M}_{1b}: Y \sim \beta_0 +X_2\\
+    \mathcal{M}_{1c}: Y \sim \beta_0 +X_3
+\end{align*}
+
+Choose the one with \textbf{best performance} $\xrightarrow{} \mathcal{M}_1$.
+
+\step Assuming $\mathcal{M}_1 = Y\sim \beta_0 +X_1$
+
+Now, add a second predictor to the chosen $\mathcal{M}_2$.
+
+\begin{align*}
+    \mathcal{M}_{2a}: Y\sim \beta_0 +X_1+X_2\\
+    \mathcal{M}_{2b}: Y\sim \beta_0 + X_1+X_3
+\end{align*}
+
+\step Only one predictor left to add. $\mathcal{M}_3: Y\sim \beta_0 +X_1+X_2+X_3$
+
+\bigskip
+
+Among these four candidate models
+
+Choose the best $\mathcal{M}_k$ based on model selection criteria:
+
+\begin{itemize}
+    \item Adjusted $R^2$
+    \item AIC / BIC
+    \item Cross-validation error
+\end{itemize}
+
+Computational advantage over best subset selection is clear.
+
+However, \textbf{Not guaranteed to find the best possible model out of all} $2^p$ models containing subsets of the $p$ predictors.
+
+\subsubsection{Backward Stepwise Selection}
+
+\indent 
+
+Like forward stepwise selection, backward stepwise selection provides an efficient alternative to best subset selection.
+
+However, unlike forward stepwise selection: begins with the \textbf{full model} containing all $p$ predictors. Iteratively removes the \textbf{least useful} predictor, one-at-a-time.
+
+\step Denote $\mathcal{M}_p$ to be the full model (e.g. $Y = \beta_0 + \beta_1X_1+\cdots+\beta_pX_p +\epsilon$ in linear regression). Contains all predictors.
+
+\step For $k = p,p-1,\ldots,1$, Consider all $k$ models that contain all but one of the predictors in $\mathcal{M}_k$ , for a total of $k-1$ predictors. Choose the best among these $k$ models and assign it as $\mathcal{M}_{k-1}$ (Best measured against some metric (RSS or classification error)).
+
+\step Select the single best model among the $\mathcal{M}_0,\mathcal{M}_1,\ldots,\mathcal{M}_p$. Using cross-validated prediction error, $C_p$, BIC, or adjusted $R^2$ (described later).
+
+\bigskip 
+
+Similarities to forward selection, it searches through only $1+p(p+1)/2$ models (including the null model $\mathcal{M}_0$. It can be applied in settings where $p$ is too large to apply best subset selection. Backward selection is \textbf{not guaranteed to yield the best model containing a subset of} the $p$ predictors.
+
+\noindent \textbf{Note}: for some models such as linear regression, backward selection requires that the number of cases $n$ is larger than the number of features $p$ (so that the full model can be fit). In contrast, forward stepwise can be used even when $n <p$.
+
+\subsection{Direct vs Indirect methods}
+
+\subsubsection{Linear model (feature) selection}
+
+\indent 
+
+Recall the linear model:
+
+\begin{align*}
+    Y = \beta_0 +\beta_1X_1 +\cdots+\beta_pX_p +\epsilon
+\end{align*}
+
+\noindent How to choose the optimal model?
+
+The model containing all of the predictors will always have the smallest RSS, since these quantities are related to the training error. We wish to choose a model with low test error, not a model with low training error (Training error is usually a poor estimate of test error). Therefore, RSS are not suitable for selecting the best model among a collection of models with different number of predictors.
+
+\subsubsection{Estimating test error}
+
+\indent 
+
+\begin{itemize}
+    \item Indirectly estimate test error by making an adjustment to the training error. Account for the bias due to overfitting.
+    \item Directly estimate the test error, using either a test set or cross-validation set approach (covered in Week 6).
+\end{itemize}
+
+We illustrate the indirect approach and also review cross-validation.
+
+\subsubsection{Details of $C_p$, BIC, adjusted $R^2$ (for standard regression)}
+
+\indent
+
+\noindent\textbf{Mallow’s $C_p$}
+
+\begin{align*}
+    C_p = \frac{1}{n}(\text{RSS}+2d\widehat{\sigma}^2)
+\end{align*}
+
+where $n$: number of observations, $d$: total number of features (not including the intercept), $\widehat{\sigma}^2$: an estimate of the variance of $\epsilon$.
+
+\bigskip
+
+\noindent\textbf{Bayesian Information Criterion}
+
+\begin{align*}
+    \text{BIC} = \frac{1}{n}(\text{RSS}+\log(n)d\widehat{\sigma}^2)
+\end{align*}
+
+Like $C_p$, the BIC will tend to take on small value for model with a low test error, and so generally we select model that has the lowest BIC value. 
+
+Notice that BIC replaces the $2d\widehat{\sigma}^2$ used by $C_p$ with a $\log(n)d\widehat{\sigma}^2$ term.
+
+Since $\log 8 > 2$ when $n\geq 8$, the BIC statistic typically places a heavier penalty on models with many variables, and hence results in the selection of smaller models than $C_p$.
+
+\bigskip
+
+\begin{align*}
+    & R^2 = 1-\frac{\text{RSS}}{\text{TSS}}\\
+    & \text{Adj }R^2 = 1-\frac{\text{RSS}/(n-d-1)}{\text{TSS}/(n-1)}
+\end{align*}
+
+\subsubsection{Direct approach via Validation or Cross-Validation}
+
+\indent 
+
+We are given a sequence of models $\mathcal{M}_k$ indexed by model size $k=0,1,2,\ldots,p$, where each model uses a different number of predictors. 
+
+The goal is to select the model $\mathcal{M}_k$ that yields the lowest test error.
+
+\bigskip
+
+\noindent\textbf{The Validation Set Approach}:
+
+Split the data into training and validation sets (roughly of equal size).
+
+Train each $\mathcal{M}_k$  on the training set and then test on the validation set, and record the test error (MSE or equivalent).
+
+Select $k$ for which the resulting estimated test error is the smallest.
+
+\noindent Drawback:
+
+\begin{itemize}
+    \item The validation estimate of the test error rate can be highly variable, depending on the random split of the training and the validation set.
+    \item The validation set error may overestimate the test error as it is trained on a much smaller training set.
+\end{itemize}
+
+\bigskip
+
+\noindent\textbf{Cross-Validation–the preferred method (Week 6)}
+
+\bigskip
+
+\noindent\textbf{Direct Approach}
+
+These approaches have an advantage relative to $C_p$ and BIC, in that it provides a direct estimate of the test error, and doesn’t require an estimate of the error variance $\sigma^2$.
+It can also be used in a wider range of model selection tasks, even in cases where it is hard to pinpoint the model degrees of freedom (e.g. the number of predictors in the model) or hard to estimate the error variance $\sigma^2$.
+
+\subsubsection{Shrinkage methods}
+
+\indent 
+
+The following two methods specifically designed for \textbf{linear regression}: \textbf{Ridge regression and Lasso}.
+
+The subset selection methods use least squares to fit a linear model that contains a subset of the predictors.
+
+As an alternative, we can fit a model containing all $p$ predictors using a technique that constrains or regularizes the coefficient estimates.
+
+Shrinking the coefficient estimates can significantly \textbf{reduce their variance}.
+
+\subsubsection{Ridge regression}
+
+\indent 
+
+Recall that the least squares fitting procedure estimates $\beta_0,\beta_1,\ldots,\beta_p$ using the values that minimize:
+
+\begin{align*}
+    \text{RSS} = \sum_{i=1}^n(Y_i - \beta_0 - \sum_{j=1}^p \beta_jX_{ij})^2 = ||\boldsymbol{Y} - \boldsymbol{1}_n\beta_0 - \boldsymbol{X\beta}||_2^2
+\end{align*}
+
+where $\boldsymbol{Y} = (Y_1,\ldots,Y_n)^\top$, $\boldsymbol{\beta} = (\beta_1,\ldots,\beta_p)^\top$, $\boldsymbol{X}$ is an $n\times p$ matrix with $(i,j)$th entry $X_{ij}$.
+
+The ridge regression coefficient estimates $\widehat{\beta}_{\text{R}}$ are the values that minimize:
+
+\begin{align*}
+    \text{RSS}+\lambda\sum_{j=1}^p \beta_j^2
+\end{align*}
+
+where $\lambda\geq 0$ is a tuning parameter, to be determined separately.
+
+As with least squares, ridge regression seeks coefficient estimates that fit the data well, by making the RSS small.
+
+However, the second term, $\lambda\sum_{j=1}^p \beta_j^2$ is called a shrinkage penalty: it is small when $\beta_1,\ldots,\beta_p$ are close to zero, and so it has the effect of shrinking the estimates of $\beta_j$ towards zero.
+
+The tuning parameter $\lambda$ serves to control the relative impact of these two terms on the regression coefficient estimates. Selecting a good value for $\lambda$ is critical; cross-validation is used for this.
+
+The standard least squares coefficient estimates are scale invariant:
+
+Multiplying $X_j$ by a constant $c$ simply leads to a scaling of the least squares coefficient estimates by a factor of $1/c$. Regardless of how the $j^{th}$ predictor $X_j$ is scaled, $X_j\widehat{\beta}_j$ will remain the same.
+
+In contrast, the ridge regression coefficients estimates can change substantially when multiplying a given predictor by a constant: Due to the sum of squared coefficients term in the penalty part of the ridge regression objective function.
+
+Therefore, it is best to apply ridge regression after standardising the predictors, using a formula such as below:
+
+\begin{align*}
+    \tilde{X}_{ij} = \frac{X_{ij} - \bar{X}_j}{\sqrt{\frac{1}{n}\sum_{i=1}^n(X_{ij}-\bar{X}_j)^2}}
+\end{align*}
+
+\bigskip
+
+Disadvantage:
+
+\begin{itemize}
+    \item Ridge regression will include all $p$ predictors in the final model
+    \item Subset selection will generally select models that involve a subset of the predictors
+\end{itemize}
+
+\subsubsection{Lasso regression}
+
+\indent
+
+Refers to \textbf{l}east \textbf{a}bsolute \textbf{s}hrinkage and \textbf{s}election \textbf{o}perator
+
+The Lasso is a relatively recent alternative to ridge regression that overcomes the disadvantage of retaining all the predictors in the model 
+
+The lasso coefficients $\widehat{\beta}_L$  minimise the quantity:
+
+\begin{align*}
+    \text{RSS} + \lambda\sum_{j=1}^p |\beta_j|
+\end{align*}
+
+The Lasso uses an $\ell_1$ penalty instead of the $\ell_2$ penalty.
+
+\begin{itemize}
+    \item The $\ell_1$ norm of a coefficient vector $\boldsymbol{\beta}$ is $||\boldsymbol{\beta}||_1 = \sum_{j=1}^p |\beta_j|$
+    \item Ridge regression uses the $\ell_2$ norm, $||\boldsymbol{\beta}||_2^2 = \sum_{j=1}^p \beta_j^2$
+\end{itemize}
+
+As with ridge regression, the Lasso shrinks the coefficient estimates towards zero.
+
+However, in the case of the Lasso, the $\ell_1$ penalty has the effect of forcing some of the coefficient estimates to be exactly equal to zero when the tuning parameter $\lambda$ is sufficiently large.
+
+Hence, much like best subset selection, the lasso performs \textbf{feature selection} (in an embedded manner).
+
+We say that the Lasso yields \textbf{sparse} models, i.e., models that involve only a subset of variables.
+
+As in ridge regression, selecting a good value of $\lambda$ for the Lasso is critical. Cross-validation is again the method of choice.
+
+\bigskip
+
+Why is it that the Lasso, unlike ridge regression, results in coefficient estimates that are exactly equal to zero? One can show that the Lasso and ridge regression coefficient estimates solve the problems. $s$ is determined by $\lambda$ and can be different for ridge and Lasso even under the same $\lambda$.
+
+\begin{align*}
+    & \min_\beta \sum_{i=1}^n(Y_i - \beta_0-\sum_{j=1}^p \beta_jX_{ij})^2 & \text{subject to } & \sum_{j=1}^p|\beta_j|\leq s\\
+    & \min_\beta \sum_{j=1}^n(Y_i - \beta_0 - \sum_{j=1}^p\beta_jX_{ij})^2 & \text {subject to } & \sum_{j=1}^p\beta_j^2\leq s
+\end{align*}
+
+\subsubsection{Selecting the tuning parameter}
+
+\indent 
+
+As for subset selection, for ridge regression and Lasso, we require a method to determine which of the models under consideration is the best.
+
+That is, we require a method selecting a value for the tuning parameter $\lambda$ or equivalently, the value of the constraint $s$.
+
+Cross-validation provides a simple way to tackle this problem. We choose a grid of $\lambda$ values, and compute the cross-validation error rate for each value of $\lambda$.
+
+We then select the tuning parameter value for which the cross-validation error is the smallest.
+
+Finally, the model is re-fit using all of the available observations and the selected value of the tuning parameter.
+
+\subsubsection{Elastic net in \texttt{glmnet}}
+
+\indent 
+
+In \texttt{glmnet} the implementation is actually for a more general model called the Elastic net.
+
+It solves the following penalised minimization problem.
+
+\begin{align*}
+    \arg \min_\beta ||\boldsymbol{Y}-\boldsymbol{X\beta}||_2^2 + \lambda(\frac{1-\alpha}{2}||\boldsymbol{\beta}||_2^2 + \alpha||\boldsymbol{\beta}||_1)
+\end{align*}
+
+Can consider it a weighted combination (mixture) of $\ell_1$ and $\ell_2$ penalties.
+
+Elastic net in appropriate when the variables form groups that contain highly correlated independent variables.

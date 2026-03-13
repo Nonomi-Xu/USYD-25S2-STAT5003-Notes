@@ -1,0 +1,94 @@
+\documentclass[12pt]{article}
+\usepackage[a4paper, margin=20mm, marginparwidth = 1.8cm]{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{fontspec}
+\usepackage{booktabs}
+
+\usepackage{url}
+\usepackage{appendix}
+\usepackage{subfigure}
+\usepackage{bm}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\usepackage{listings}
+\usepackage{xcolor}
+
+\usepackage[hidelinks]{hyperref}
+\usepackage{ocgx2}
+
+\newcounter{step}[subsubsection]
+\renewcommand{\thestep}{\arabic{step}}
+\newcommand{\step}{\refstepcounter{step}\textbf{Step \thestep:} }
+
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny,
+    breaklines=true
+}
+
+\linespread{1.15}
+
+\setmainfont{Times New Roman}
+\pagenumbering{roman}
+
+\begin{document}
+\input{title}
+
+\input{contents}
+\pagebreak
+
+\section{Week 1}
+\pagenumbering{arabic}
+\input{Week 1}
+\pagebreak
+
+\section{Week 2}
+\input{Week 2}
+\pagebreak
+
+\section{Week 3 - Density Estimation}
+\input{Week 3}
+\pagebreak
+
+\section{Week 4 - High-dimensional visualisation and analytics in R}
+\input{Week 4}
+\pagebreak
+
+\section{Week 5 - Classification technique}
+\input{Week 5}
+\pagebreak
+
+\section{Week 6 - Cross Validation}
+\input{Week 6}
+\pagebreak
+
+\section{Week 7 - Bootstrapping, missing data, and class imbalance}
+\input{Week 7}
+\pagebreak
+
+\section{Week 8 - Feature Selection}
+\input{Week 8}
+\pagebreak
+
+\section{Week 9 - Tree and Ensemble methods}
+\input{Week 9}
+\pagebreak
+
+\section{Week 10 - Monte Carlo}
+\input{Week 10}
+\pagebreak
+
+\section{Week 11 - Markov Chain Monte Carlo}
+\input{Week 11}
+\pagebreak
+
+
+\end{document}

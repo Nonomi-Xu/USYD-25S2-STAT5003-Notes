@@ -1,0 +1,445 @@
+\subsection{Loading Packages}
+
+\indent 
+
+At the start of your R workshop, load all necessary packages to ensure a smooth session. Here’s an example:
+
+\switchocg{W801}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W801}{0}
+\begin{lstlisting}[language=R]
+library(tidyverse)  # Data science packages
+library(ggplot2)    # Data visualization
+library(ggthemes)   # Inclusive ggplot themes
+library(here)       # File paths
+library(mice)
+library(visdat)
+library(themis)
+library(rsample)    # Training/test sets split
+library(caret)
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Simple Regression}
+
+\indent 
+
+In this workshop, we’ll be using the skin-cancer.csv data on Canvas. This dataset contains information on mortality rates (number of deaths per 10 million people) against the latitude of the state for some US states. We’ll explore how missing data will impact our conclusions from this dataset.
+
+Let’s consider the conclusions we can draw from this dataset with a simple regression of skin cancer mortality against latitude.
+
+\switchocg{W802}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W802}{0}
+\begin{lstlisting}[language=R]
+full.data <- read.csv(here("datasets", "skin-cancer.csv"), header = TRUE)
+\end{lstlisting}
+\end{ocg}
+
+Conduct a simple linear regression with the Mortality rates as the response and Latitude as the predictor. Plot the data along with the regression and interpret the regression output.
+
+\switchocg{W803}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W803}{0}
+\begin{lstlisting}[language=R]
+full.lm <- lm(Mort ~ Lat, data = full.data)
+plot(Mort ~ Lat, data = full.data)
+abline(full.lm)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W804}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W804}{0}
+\begin{lstlisting}[language=R]
+summary(full.lm)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W805}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W805}{0}
+\begin{lstlisting}[language=R]
+## alternatively, we can use `broom` package to get tidy version of the model results--recap in Week 3's workshop
+library(broom)
+tidy(full.lm)
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Effect of missingness on simple regression}
+
+\indent 
+
+Now, let’s examine the impact of introducing missing values in the predictor in regression modelling.
+
+\noindent \textbf{Simulate missing values in Latitude}
+
+Simulate missingness in the Latitude feature such that approximately half of its values are missing at random (MAR)—that is, missing values are introduced randomly but with a dependency on another variable, in this case, Mortality. This means the probability of a Latitude value being missing depends on the value of Mortality, rather than being completely independent (i.e., not MCAR).
+
+A convenient way to introduce missingness is by using the mice::ampute() function. This function returns a list, and the data containing the missing values can be accessed via the amp element.
+
+For example, if you store the result in an object called available.data, the amputed dataset can accessed via available.data\$amp. Assign this object as amputed\_data and use vis\_miss and vis\_dat to visualise the missing pattern.
+
+\switchocg{W806}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W806}{0}
+\begin{lstlisting}[language=R]
+set.seed(5003)
+available.data = ampute(full.data,
+                        prop = 0.5,
+                        patterns = data.frame(Mort = 1, Lat = 0))
+
+head(available.data$amp)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W807}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W807}{0}
+\begin{lstlisting}[language=R]
+amputed_data <- available.data$amp
+
+vis_miss(amputed_data)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W808}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W808}{0}
+\begin{lstlisting}[language=R]
+vis_dat(amputed_data)
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Effect of missingness in the predictor}
+
+\indent 
+
+Now, refit the simple linear regression using the amputed\_data with Mortality as the response and Latitude as the predictor. Show that it is not consistent with the original regression using the full data.
+
+Note that R will automatically remove missing values from the model when using lm. In other words, it takes a complete-case approach.
+
+\switchocg{W809}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W809}{0}
+\begin{lstlisting}[language=R]
+available.lm <- lm(Mort ~ Lat, data = amputed_data)
+
+
+plot(Mort ~ Lat, data = full.data, col = "black")
+
+points(Mort ~ Lat, data = amputed_data, pch = 18, col = "blue")
+
+abline(full.lm, lty = 'dotted', col = "black")
+
+abline(available.lm, col = "blue")
+
+summary(available.lm)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W810}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W810}{0}
+\begin{lstlisting}[language=R]
+legend("bottomleft", legend = c("Full data", "Available data", "Full reg", "Available reg"), col = rep(c("black", "blue"), 2), pch = c(21, 18, rep(NA, 2)), lty = c(rep(NA, 2), c("dotted", "solid")))
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W811}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W811}{0}
+\begin{lstlisting}[language=R]
+tidy(full.lm)
+\end{lstlisting}
+\end{ocg}
+
+The differences are slight but can see that the intercept and slope estimates are off with a smaller intercept on the model computed with missing data and the slope is also less steep at -5.11 instead of -5.98.
+
+\subsubsection{Random Imputation Using Linear Regression + Noise}
+
+\indent 
+
+We will now perform random imputation to estimate the missing Latitude values in the amputed\_data. This involves two key steps.
+
+\noindent\textbf{Fit a NSW simple linear regression model with Latitude as the response}
+
+Conduct a simple linear regression where Latitude is the response and Mortality (Latitude ~ Mortality) is the predictor but using the amputed\_data.
+
+Note again: R will automatically remove missing values when using lm. In other words, it takes a complete-case approach.
+
+\switchocg{W812}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W812}{0}
+\begin{lstlisting}[language=R]
+simple.missing <- lm(Lat ~ Mort, data = amputed_data)
+
+## summary(simple.missing)
+
+tidy(simple.missing)
+\end{lstlisting}
+\end{ocg}
+
+\bigskip
+
+\noindent\textbf{Predict and Add random noise}
+
+Next, for rows where Latitude is missing, use the fitted model to generate predicted values.
+
+To reflect natural variability, add random noise drawn from a normal distribution (rnorm) with mean zero and standard deviation equal to the residual standard error from the fitted model. Plot both regression lines on the same graph.
+
+\switchocg{W813}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W813}{0}
+\begin{lstlisting}[language=R]
+## extract the mortality values whose lattitudes are missing 
+missing.lats <- amputed_data |>
+  filter(is.na(Lat)) |>
+  dplyr::select(Mort)
+
+# Impute with our simple linear model with missing data
+simple.preds <- predict(simple.missing, newdata = missing.lats)
+
+# Extract the residual standard error from the fitted model
+# Base R 
+sigma(simple.missing)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W814}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W814}{0}
+\begin{lstlisting}[language=R]
+# Broom package 
+# glance(simple.missing)[3]
+
+# Add random noise
+rand.preds <- simple.preds + rnorm(length(simple.preds), sd = sigma(simple.missing))
+
+imputed.data <- amputed_data
+imputed.data$Lat[is.na(imputed.data$Lat)] <- rand.preds
+
+imputed.lm <- lm(Mort ~ Lat, data = imputed.data)
+\end{lstlisting}
+\end{ocg}
+
+\bigskip
+
+\noindent\textbf{Compare Regression Lines (Full versus Imputed Data)}
+
+Now, fit a regression model on the imputed dataset and compare it with the model from the original full data. Plot both regression lines on the same graph.
+
+\switchocg{W815}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W815}{0}
+\begin{lstlisting}[language=R]
+tidy(imputed.lm)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W816}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W816}{0}
+\begin{lstlisting}[language=R]
+tidy(full.lm)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W817}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W817}{0}
+\begin{lstlisting}[language=R]
+full.range <- lapply(full.data, range)
+imputed.range <- lapply(imputed.data, range)
+yrange <- range(c(full.range$Mort, imputed.range$Mort))
+xrange <- range(c(full.range$Lat, imputed.range$Lat))
+plot(Mort ~ Lat, data = full.data, ylim = yrange, xlim = xrange)
+abline(full.lm, lty = "dotted")
+points(Mort ~ Lat, data = amputed_data, col = "blue", pch = 21)
+abline(available.lm, col = "blue")
+points(Mort ~ Lat, data = imputed.data, col = "red", pch = 18)
+abline(imputed.lm, lty = "dashed", col = "red")
+legend("bottomleft", legend = c("Full data", "Available data", "Imputed data", "Full reg", "Available reg", "Imputed reg"),
+       col = rep(c("black", "blue", "red"), 2),
+       pch = c(21, 21, 18, rep(NA, 3)),
+       lty = c(rep(NA, 3), c("dotted", "solid", "dashed")))
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W818}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W818}{0}
+\begin{lstlisting}[language=R]
+## GGPLOT Solution
+
+# Add a source column
+imputed.data$Source <- "Imputed"
+full.data$Source <- "Full"
+amputed_data$Source <- "Amputed"
+
+# Combine all datasets
+plot_data <- rbind(imputed.data, full.data, amputed_data)
+
+# Plot
+
+
+ggplot(plot_data, aes(x = Lat, y = Mort, color = Source)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm", se = FALSE, fullrange = TRUE) +
+  labs(
+    title = "Regression Lines for Full, Amputed, and Imputed Data",
+    x = "Latitude",
+    y = "Mortality",
+    color = "Dataset Type"
+  ) +
+  theme_minimal() +
+  scale_color_colorblind()
+\end{lstlisting}
+\end{ocg}
+
+For this dataset, even with random imputation, our results are much closer to the complete regression as opposed to no imputation. This will not necessarily always be the case, but in this particular example, we can see that it is true.
+
+\subsection{Handling Class Imbalance with SMOTE}
+
+In this exercise, we will explore how to handle class imbalance in a credit card fraud detection problem using the SMOTE technique from the themis package. We’ll build a SVM classifier on the balanced data and evaluate its performance.
+
+Download the creditcard\_sub.csv dataset from Canvas which contains a highly imbalanced binary classification problem (more non-fradulent cases than fadulent cases), and read into R. Ensure that the Class variable is coded as a factor.
+
+\switchocg{W819}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W819}{0}
+\begin{lstlisting}[language=R]
+card <- read.csv(here("datasets", "creditcard_sub.csv"), header = TRUE)
+
+table(card$Class)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W820}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W820}{0}
+\begin{lstlisting}[language=R]
+head(card)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W821}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W821}{0}
+\begin{lstlisting}[language=R]
+str(card)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W822}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W822}{0}
+\begin{lstlisting}[language=R]
+card <- card |> mutate(Class = as.factor(Class))
+\end{lstlisting}
+\end{ocg}
+
+\bigskip
+
+\noindent\textbf{Split into Training and Test Sets}
+
+This week, we will explore rsample package to randomly split the subset into a 75\% training and 25\% test set using initial\_split(). Make sure to stratify on the Class variable to maintain the imbalance in both sets. As an exercise, split the data using caret::CreateDataParticipation.
+
+Recall from lecture that data needs to be divided into training/test sets before doing any SMOTE. Otherwise, you will leak information from training to test data set.
+
+\switchocg{W823}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W823}{0}
+\begin{lstlisting}[language=R]
+set.seed(5003)
+
+data_split <- initial_split(card, prop = 0.75, strata = Class)
+train_data <- training(data_split)
+test_data <- testing(data_split)
+
+## using caret package, and using this will create a slightly different data split. 
+##set.seed(5003)
+
+##index <- createDataPartition(card$Class, p = 0.75)[[1]]
+##train_data <- card[index, ]
+##test_data <- card[-index,]
+\end{lstlisting}
+\end{ocg}
+
+\bigskip
+
+\noindent\textbf{Balance the Trainging Set using SMOTE}
+
+Use the step\_smote() function from the themis package to synthetically balance the minority class within the training data set. Assign the result as balanced\_data.
+
+This helps ensure that the class imbalance is addressed only during the model training, without leaking information from the test.
+
+\switchocg{W824}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W824}{0}
+\begin{lstlisting}[language=R]
+balanced_data <- recipe(Class ~ Amount, data = train_data) |> ## the recipe is the model formula, here we use Amount to predict the credit card status
+  step_smote(Class) |> 
+  prep() |> 
+  juice()
+
+## After SMOTE, both classes have the same number of cases
+table(balanced_data$Class)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W825}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W825}{0}
+\begin{lstlisting}[language=R]
+table(train_data$Class)
+\end{lstlisting}
+\end{ocg}
+
+\bigskip
+
+\noindent\textbf{Train an SVM Model, Predict and Evaluate Performance}
+
+Now build a SVM classifier with an RBF kernel and train it using the balanced data. There are three hyperparameters associated with SVM: sigma, C and Weight.
+
+\step Use caret::train()to find the best combination of hyperparameters (sigma, C, and Weight) by performing five repeated cross-validation on the balanced\_data.
+
+\step Identify the Best Hyperparameters and refit on the Balanced Training Set.
+
+\step Predict on the test\_data, and use confusionMatrix to report the performance metrics.
+
+\switchocg{W826}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W826}{0}
+\begin{lstlisting}[language=R]
+svm.radial.model <- caret::train(Class ~ Amount, data = balanced_data,
+                          method = "svmRadialWeights",
+                          trControl = trainControl(method = "repeatedcv", repeats = 5)) 
+
+## Look at the results, and select the best combo of the hyperparameter 
+
+which.max(svm.radial.model$results[,4]) ## it returns 7 referring to row 7 combo
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W827}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W827}{0}
+\begin{lstlisting}[language=R]
+# Define the grid with only one combination
+tune_grid <- expand.grid(
+  sigma = svm.radial.model$results[7,1],
+  C = svm.radial.model$results[7,2],
+  Weight = svm.radial.model$results[7,3]
+)
+
+## Use the best combo and refit on the whole data set to train the model and make predictions on the test set 
+svm.radial.model.final <- caret::train(Class ~ Amount, data = balanced_data,
+                          method = "svmRadialWeights", tuneGrid = tune_grid)
+                          
+
+svm.predictions <- predict(svm.radial.model.final, test_data)
+
+confusionMatrix(test_data$Class, svm.predictions, positive = "1")
+\end{lstlisting}
+\end{ocg}

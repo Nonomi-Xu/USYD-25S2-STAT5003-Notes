@@ -1,0 +1,310 @@
+\subsection{Loading Packages}
+
+\indent
+
+At the start of your R workshop, load all necessary packages to ensure a smooth session. Here’s an example:
+
+\switchocg{W401}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W401}{0}
+\begin{lstlisting}[language = R]
+library(dplyr)      # Data manipulation
+library(tidyr)      # Tidying data
+library(tidyverse)  # Data science packages
+library(ggplot2)    # Data visualization
+library(here)       # File paths
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Parametric Density Estimation}
+
+\indent 
+
+\subsubsection{Basic Gaussian Simulation}
+
+\indent 
+
+Simulate 100 samples of a normal distribution (rnorm) with mean of 10 and standard deviation of 10. Plot a histogram of this sample.
+
+\switchocg{W402}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W402}{0}
+\begin{lstlisting}[language = R]
+data1a <- rnorm(100, mean = 10, sd = 10)
+
+hist(data1a, breaks = 30)
+\end{lstlisting}
+\end{ocg}
+
+Alternatively, using ggplot
+
+\switchocg{W403}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W403}{0}
+\begin{lstlisting}[language = R]
+as.data.frame(data1a) |> ggplot(aes(x = data1a)) +
+  geom_histogram(bins = 30) +
+  labs(title = "Histogram of a simulated normal distribution", 
+       x = "")
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Reproducible RNG}
+
+\indent 
+
+Setting the seed in random number generation is crucial for reproducibility. By using set.seed with a specific value, such as the unit code or your student number, you ensure that the sequence of random numbers generated is the same each time the code is run. This is particularly important in your group project, where reproducibility of results is essential. By resetting the seed to the same value, you can generate identical ‘random’ samples, which allows for consistent and verifiable results. Let’s use set.seed(5003) to complete the rest of the workshop.
+
+\subsubsection{Log likelihood}
+
+\indent 
+
+Recall the log likelihood for a sample of $n$ iid normal variables $(x_1,...,x_n)$ is as follows:
+
+\begin{align*}
+    L(\theta;x) & = \log(\prod_{i=1}^{n}\sqrt{2\pi\sigma^2})^{-1}\exp(-\frac{(x_i-\mu)^2}{2\sigma^2}))\\
+    & = -\frac{n}{2}\log(2\pi\sigma^2)-\frac{1}{2\sigma^2}\sum_{i=1}^{n}(x_i-\mu)^2
+\end{align*}
+
+1.Generate 100 observations are drawn from a normal distribution parameterised as $N(\mu=10,\sigma=10)$?
+
+2.Using the generated data, calculate the log likelihood for varying values of $\mu$ from 1 to 20, while keeping $\sigma=10$.
+
+3.Plot the log likelihood against $\mu$. From the plot, determine the maximum likelihood estimate of $\mu$?
+
+\switchocg{W404}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W404}{0}
+\begin{lstlisting}[language = R]
+set.seed(5003)
+
+data.1c <- rnorm(100, 10, 10)
+mu <- 1:20
+
+## define a function to calculate the loglikelihood 
+log.likelihood <- function(mu, sigma, x) {
+  n <- length(x)
+  -n/2 * log(2 * pi * sigma^2) - 1/(2 * sigma^2) * sum((x - mu)^2)
+}
+
+
+# Initialise a vector to store the results
+log_likelihood_results <- rep(0, length(mu))
+
+# Loop to calculate the log-likelihood for each value of mu
+for (i in mu) {
+  log_likelihood_results[i] <- log.likelihood(mu[i], 10, data.1c)
+}
+
+# Print the results
+print(log_likelihood_results)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W405}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W405}{0}
+\begin{lstlisting}[language = R]
+plot(mu, log_likelihood_results, type = "l", ylab = "Log Likelihood")
+mu.mle <- mu[which.max(log_likelihood_results)]
+mu.mle
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W406}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W406}{0}
+\begin{lstlisting}[language = R]
+abline(v = mu.mle, lty = 2)
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Parametric and Non-Parametric Density Estimation}
+
+\subsubsection{Basic Exploratory Data Analysis}
+
+\indent 
+
+For this question, we will be performing density estimates on the heights dataset. Load the height.csv into a data frame. Make a histogram of the heights, set the y axis to be probability not frequency. Repeat for 5, 10, and 20 bins.
+
+\switchocg{W407}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W407}{0}
+\begin{lstlisting}[language = R]
+# Load the dataset
+heights <- read.csv(here("datasets", "height.csv"))
+
+# Create a 2x2 plotting grid
+par(mfrow = c(2, 2))
+
+# Plot the first histogram
+hist(heights$Height_m, probability = TRUE, xlab = "Height (m)")
+
+# Define the number of bins
+n_bins <- c(5, 10, 20)
+
+# Plot histograms with different numbers of bins
+for (n in n_bins) {
+  hist(heights$Height_m, probability = TRUE, breaks = n,
+       xlab = "Height (m)",
+       main = paste("Histogram with", n, "bins"))
+}
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Kernel Density Estimation}
+
+\indent 
+
+Use the density function to perform kernel density estimation with the Gaussian, the Epanechnikov, and the triangular kernels. Plot the results for each kernel. An example for the Gaussian kernel is provided for you (next slide). Expanding the kernels vector to contain all three kernels and plotting them via a loop.
+
+\switchocg{W408}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W408}{0}
+\begin{lstlisting}[language = R]
+kernels <- c("gaussian")
+
+ plot(density(heights$Height_m, kernel = paste(kernels)), 
+       xlab = "Height (m)",
+       main = paste("density estimation using", kernels ))
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W409}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W409}{0}
+\begin{lstlisting}[language = R]
+kernels <- c("gaussian", "epanechnikov", "triangular")
+par(mfrow = c(2, 2))
+
+# density estimation using different kernels
+for (n in kernels) {
+  plot(density(heights$Height_m, kernel = n), 
+       xlab = "Height (m)",
+       main = paste("density estimation using", n ))
+}
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Probability Calculation}
+
+\indent 
+
+Compute an estimate of the probability that a person is taller than 1.7m using a kernel density estimator.
+
+\switchocg{W410}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W410}{0}
+\begin{lstlisting}[language = R]
+# Use the approximate and integrate functions
+density.est <- density(heights$Height_m)
+#?approxfun
+f <- approxfun(density.est)
+prob <- integrate(f, 1.7, max(density.est$x))
+prob
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Maximum Likelihood Estimation}
+
+If we assume the heights data follows a Gaussian distribution, what are the maximum likelihood estimates of the mean $\mu$ and standard deviation $\sigma$? Hint: See ?mle from the stats4 library.
+
+\switchocg{W411}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W411}{0}
+\begin{lstlisting}[language = R]
+library(stats4)
+
+## type "?mle" to see the components required to run this function 
+
+## write a function that calculates the negative log-likelihood for the data
+negativelogLikelihood <- function(m, s) {
+    if (s < 0)
+        return(Inf)
+    -sum(log(dnorm(heights$Height_m, mean = m, sd = s)))
+}
+mle.fit <- mle(negativelogLikelihood, list(m = 1, s = 1)) ## list contains the starting values for the mean and the standard deviation
+mle.fit
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W412}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W412}{0}
+\begin{lstlisting}[language = R]
+summary(mle.fit)
+\end{lstlisting}
+\end{ocg}
+
+\section{Bandwidth Selection}
+
+\subsubsection{Integrated Square Error}
+
+\indent 
+
+The Integrated Square Error is a performance metric used to assess the accuracy of density estimates. It quantifies the discrepancy between the estimated density and the true density function.
+
+\begin{align*}
+    \text{ISE}(h) = \int_{-\infty}^{\infty}(\hat{f}(x;h)-f(x))^2 dx
+\end{align*}
+
+\subsubsection{Detering the Optimal Bandwidth for Density Estimation}
+
+\indent 
+
+Evaluate the following code chunk to determine how these codes are applied to find the optimal bandwidth needed for the density function:
+
+\switchocg{W413}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W413}{0}
+\begin{lstlisting}[language = R]
+# Set seed for reproducibility
+set.seed(5003)
+
+# Generate data
+z <- rnorm(100)
+
+# Define the grid for bandwidth values
+h.grid <- seq(from = 0.01, to = 1, length.out = 256)
+
+# Initialize a list to store density estimates
+density.estimates <- vector("list", length(h.grid))
+
+# Calculate density estimates using a loop
+for (i in 1: length(h.grid)) {
+  h <- h.grid[i]
+  density.estimates[[i]] <- density(z, bw = h, n = 512, from = -3, to = 3)
+}
+
+# Define the ISE function
+ise <- function(f, fhat) mean((fhat - f)^2) * 6 # recall we choose -3 to 3 to evaluate the integral
+
+# Initialize a vector to store ISE values
+ise.h <- rep(0, length(h.grid))
+
+# Calculate ISE values using a loop
+for (i in 1: length(density.estimates)) {
+  d <- density.estimates[[i]]
+  ise.h[i] <- ise(dnorm(d$x), d$y)
+}
+
+# Plot the ISE against bandwidth
+par(mfrow = c(1, 2))
+plot(h.grid, ise.h, type = "l", main = "ISE(h)", 
+     xlab = "Bandwidth (h)", ylab = "ISE")
+
+# Find the optimal bandwidth
+opt.ind <- which.min(ise.h)
+opt.h <- h.grid[opt.ind]
+
+# Plot the density estimate with the optimal bandwidth
+plot(density.estimates[[opt.ind]], main = "",
+     xlab = "", ylab = "Density", ylim = c(-1e-2, dnorm(0) + 1e-2))
+rug(z)
+legend("topright", legend = c("Estimated via KDE",
+                              "Standard Normal Density"),
+       col = 1:2, lty = 1:2)
+x <- density.estimates[[1]]$x
+lines(x, dnorm(x), lty = 2, col = 2)
+\end{lstlisting}
+\end{ocg}

@@ -1,0 +1,304 @@
+\subsection{File I/O}
+
+\subsubsection{Read}
+
+\noindent\textbf{Require}: Download the Cereal.csv file from the Canvas page and use the read.csv command to read in the csv file into R and assign it to the object called cereal.
+
+\switchocg{W101}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W101}{0}
+\begin{lstlisting}[language=R]
+library(readr)
+library(dplyr)
+library(ggplot2) 
+library(here) # The `here` package simplifies the process of constructing file paths in R projects.
+
+cereal <- read.csv(here("workshops/datasets", "Cereal.csv"))
+cereal |> glimpse() # The `glimpse()` function from the `dplyr` package provides a quick overview of the `cereal` dataset.
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Data Frames}
+
+\noindent\textbf{Require A}: Use head(cereal) to view the first few lines and class(cereal) to confirm it’s a data frame.
+
+\switchocg{W102}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W102}{0}
+\begin{lstlisting}[language = R]
+# using pipe 
+cereal|>  head(7) 
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require B}: Use colnames(cereal) for column names and dim(cereal) or nrow(cereal) for the number of rows.
+
+\switchocg{W103}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W103}{0}
+\begin{lstlisting}[language = R]
+cereal |> colnames
+cereal |> nrow()
+cereal |> dim()
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require C}: Extract the calories column
+
+\switchocg{W104}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W104}{0}
+\begin{lstlisting}[language = R]
+# Extracts the 'calories' column from the 'cereal' data frame and assigns it to 'Cal' as a vector.
+Cal <- cereal$calories 
+
+# Selects the 'calories' column from the 'cereal' data frame and assigns it to 'Cal' as a data frame.
+Cal <- cereal |> select(calories)
+
+# Pulls the 'calories' column from the 'cereal' data frame and assigns it to 'Cal' as a vector.
+Cal <- cereal |> pull(calories)
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require D}: Extract rows 1 to 10 from the cereal data frame.
+
+\switchocg{W105}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W105}{0}
+\begin{lstlisting}[language = R]
+# Extracts the first 10 rows from the 'cereal' data frame using base R.
+cereal[1:10,] 
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require E}: Filter the cereal data frame to include only rows where mfr is "K" and assign it to Kelloggs.
+
+\switchocg{W106}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W106}{0}
+\begin{lstlisting}[language = R]
+Kelloggs <- cereal |> filter(mfr == "K") 
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Factors}
+
+\noindent\textbf{Require A}: Load the Cereal data again with the read.csv command again. This time, use the optional argument, stringsAsFactors = TRUE. The mfr and type columns are now factors. Check that this is true.
+
+\switchocg{W107}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W107}{0}
+\begin{lstlisting}[language = R]
+# converting character columns to factors.
+cereal.with.factors <- read.csv(here("workshops/datasets","Cereal.csv"), stringsAsFactors = TRUE)
+cereal.with.factors
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require B}: How many levels are there in mfr and type? (use the functions levels or nlevels) - levels will only count FACTORS not CHARACTER strings
+
+\switchocg{W108}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W108}{0}
+\begin{lstlisting}[language = R]
+levels(cereal.with.factors$mfr)
+## or
+nlevels(cereal.with.factors$mfr)
+## or
+str(cereal.with.factors$mfr)
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Vectors}
+
+\noindent\textbf{Require A}: Extract the calories into a new vector called cereal.calories.
+
+\switchocg{W107}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W107}{0}
+\begin{lstlisting}[language = R]
+# Select the 'calories' column from the 'cereal' data frame and convert it to a vector.
+cereal.calories <- cereal |> select(calories) |> pull()
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require B}: How many elements are there in cereal.calories? (length)
+
+\switchocg{W108}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W108}{0}
+\begin{lstlisting}[language = R]
+# length(cereal.calories) - old way
+cereal.calories |> length()
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require C}: Extract the 5th to the 10th element from cereal.calories.
+
+\switchocg{W109}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W109}{0}
+\begin{lstlisting}[language = R]
+cereal.calories[5:10] 
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require D}: Add one more element to cereal.calories using c().
+
+\switchocg{W110}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W110}{0}
+\begin{lstlisting}[language = R]
+# Add the value 1.0 to the end of the 'cereal.calories' vector using the concatenate function 'c'.
+cereal.calories <- c(cereal.calories, 1.0) # c for concatenate
+
+# Get the length of the 'cereal.calories' vector to see how many elements it contains.
+length(cereal.calories)
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Matrix}
+
+\noindent\textbf{Require A}: Can you force the cereal data frame to be a Matrix? (as.matrix(cereal)). Check that the elements have been forced into the character type.
+
+\switchocg{W111}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W111}{0}
+\begin{lstlisting}[language = R]
+# Convert the 'cereal' data frame to a matrix.
+cereal.matrix <- as.matrix(cereal)
+
+# Check if 'cereal.matrix' is indeed a matrix.
+is.matrix(cereal.matrix)
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require B}: Now do this again, but this time leave out the mfr, name and type columns. Check that the elements are now numeric.
+
+\switchocg{W112}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W112}{0}
+\begin{lstlisting}[language = R]
+# Remove the 'mfr', 'name', and 'type' columns from the 'cereal' data frame.
+cereal.removed <- cereal |> select(-c(mfr, name, type))
+
+# Display the column names of the modified 'cereal.removed' data frame.
+cereal.removed |> colnames()
+
+# Convert the 'cereal.removed' data frame to a numeric matrix.
+cereal.numeric.matrix <- as.matrix(cereal.removed)
+
+# Display the structure of the 'cereal.numeric.matrix'.
+str(cereal.numeric.matrix)
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Numerical Summary}
+
+\subsubsection{Summary}
+
+\noindent\textbf{Require}:Use the summary function to extract the median, 1st quartile and 3rd quartile data from the sodium column.
+
+\switchocg{W113}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W113}{0}
+\begin{lstlisting}[language = R]
+summary(cereal$sodium)
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Basic Statistics}
+
+\noindent\textbf{Require A}: Find the max, min, standard deviation and mean of the sodium (max(), min(), sd(), mean())
+
+\switchocg{W114}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W114}{0}
+\begin{lstlisting}[language = R]
+cereal |>  pull(sodium)|> summary()
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require B}: Find the mean sodium of each mfr.
+
+\switchocg{W115}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W115}{0}
+\begin{lstlisting}[language = R]
+# Calculate the mean sodium content for each manufacturer ('mfr') in the 'cereal' data frame using the aggregate function.
+mean.sodiums <- aggregate(sodium ~ mfr, data = cereal, FUN = mean)
+
+# Display the resulting data frame with mean sodium values for each manufacturer.
+mean.sodiums 
+
+# Alternatively, select the 'sodium' and 'mfr' columns from the 'cereal' data frame, group by 'mfr', and calculate the mean sodium content for each group using the tidyverse approach.
+cereal |>
+    select(sodium, mfr) |>
+    group_by(mfr) |>
+    summarise(mean_sodium = mean(sodium))
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Graphical Summary}
+
+\subsubsection{Boxplot}
+
+\noindent\textbf{Require}: Make a boxplot of the sodium against mfr using boxplot().
+
+\switchocg{W116}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W116}{0}
+\begin{lstlisting}[language = R]
+# Create a boxplot of sodium content by manufacturer using base R.
+# labels for both axes and give a meaningful title
+boxplot(sodium ~ mfr, data = cereal,
+        xlab = "Manufacturer", ylab = "Sodium content", main = "Sodium Content by Manufacturer")
+
+
+# Using ggplot2.
+
+cereal |> 
+  ggplot(aes(x = mfr, y = sodium)) + 
+  geom_boxplot() + 
+  theme_classic() + 
+  labs(x =  "Manufacturer", y = "Sodium content") +
+  ggtitle("Sodium Content by Manufacturer")
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Scatter Plot}
+
+\noindent\textbf{Require}: Plot calories against sodium using plot().
+
+\switchocg{W117}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W117}{0}
+\begin{lstlisting}[language = R]
+# Create a scatter plot of calories versus sodium using base R.
+# The plot has the title "Calories versus Sodium Scatter Plot".
+plot(calories ~ sodium, data = cereal, main = "Calories versus Sodium Scatter Plot")
+
+
+# Create a scatter plot of calories versus sodium using ggplot2.
+# Add a linear regression line without the confidence interval.
+# The plot has the title "Calories versus Sodium Scatter Plot".
+cereal |> 
+  ggplot(aes(x = sodium, y = calories)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x =  "Sodium", y = "Carlories") +
+  ggtitle("Calories versus Sodium Scatter Plot")
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Write Data to File}
+
+\noindent\textbf{Require}: Write data frame with only the Kellogg’s observations to a file called kelloggs.csv. Use the write.csv command.
+
+\switchocg{W118}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W118}{0}
+\begin{lstlisting}[language = R]
+write.csv(Kelloggs, here("workshops/datasets", "kelloggs.csv"))
+\end{lstlisting}
+\end{ocg}

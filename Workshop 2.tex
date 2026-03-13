@@ -1,0 +1,332 @@
+\subsection{File I/O}
+
+\subsubsection{Read}
+
+\noindent\textbf{Require}: Modifying the below code for reading in the Sonar.csv file into R and assign it to the object called sonar.
+
+
+\switchocg{W201}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W201}{0}
+\begin{lstlisting}[language = R]
+library(tidyverse)
+## install.packages("here") # use this function to install a new package, this action needs to be done once
+library(here) # load package, the `here` package simplifies the process of constructing file paths in R projects.
+
+cereal <- read.csv(here("datasets", "Cereal.csv"))
+
+library(tidyverse)
+## install.packages("here") # use this function to install a new package, this action needs to be done once
+library(here) # load package, the `here` package simplifies the process of constructing file paths in R projects.
+
+sonar <- read.csv(here("datasets", "Sonar.csv"))
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Data Frames}
+
+\noindent\textbf{Require A}: Use head(sonar) to view the first few lines and class(sonar) to confirm it’s a data frame.
+
+\switchocg{W202}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W202}{0}
+\begin{lstlisting}[language = R]
+head(sonar)
+
+head(sonar, n = 10) # to change the default of showing the first six lines to the first 10 observations
+
+class(sonar)
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require B}: Use colnames(sonar) for column names and dim(sonar) or nrow(sonar) for the number of rows.
+
+\switchocg{W203}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W203}{0}
+\begin{lstlisting}[language = R]
+colnames(sonar)
+
+dim(sonar)
+
+nrow(sonar)
+
+sonar |> colnames
+
+sonar |> dim()
+
+sonar |> nrow()
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require C}: Extract the Class column and assign it to an object named target
+
+\switchocg{W204}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W204}{0}
+\begin{lstlisting}[language = R]
+# There are two ways of doing it
+target <- sonar$Class
+
+target <- sonar[["Class"]]
+
+# Tidyverse version 
+target <- sonar |> select(Class)
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require D}: To create a new data frame called mine from the sonar dataset that contains observations where the Class is M (metal cylinder), you can modify the cereal example
+
+\switchocg{W205}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W205}{0}
+\begin{lstlisting}[language = R]
+Kelloggs <- subset(cereal, mfr == "K") 
+
+## if you are confident, you can use the `filter` function 
+Kelloggs <- cereal |> filter(mfr == "K") 
+
+
+library(tidyverse)
+mine <- sonar |> filter(Class == "M") 
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Factors}
+
+\noindent\textbf{Require A}: Load the sonar data again with the read.csv command again. This time, use the optional argument, stringsAsFactors = TRUE. The Class column is now a factor. Check that this is true.
+
+\switchocg{W206}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W206}{0}
+\begin{lstlisting}[language = R]
+# converting character columns to factors.
+sonar_with_factors <- read.csv(here("datasets","Sonar.csv"), stringsAsFactors = TRUE)
+
+# Shows the structure of 'sonar_with_factors', indicating that only character columns are converted to factors.
+
+## omit printing out the code as the results are too long
+# str(sonar_with_factors) 
+
+# Shows the structure of the original 'sonar' data frame.
+## omit printing out the code as the results are too long
+# str(sonar)
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require B}: How many levels are there in Class? (use the functions levels or nlevels) - levels will only count FACTORS not CHARACTER strings
+
+\switchocg{W207}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W207}{0}
+\begin{lstlisting}[language = R]
+levels(sonar_with_factors$Class)
+
+# alternatively, using the double square brackets to extract the variable
+levels(sonar_with_factors[["Class"]])
+
+## or
+nlevels(sonar_with_factors$Class)
+
+## or
+str(sonar_with_factors$Class)
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Vectors}
+
+\noindent\textbf{Require A}: Extract the V1 into a new vector called v1. You can use is.vector to check its data structure
+
+\switchocg{W208}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W208}{0}
+\begin{lstlisting}[language = R]
+v1 <- sonar$V1
+
+v1 <- sonar[["V1"]]
+
+## tidyverse
+v1 <- sonar |> select(V1) |> pull()
+
+is.vector(v1)
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require B}: Use length to find out how many elements are there in v1?
+
+\switchocg{W209}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W209}{0}
+\begin{lstlisting}[language = R]
+length(v1)
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require C}: Extract the 5th to the 10th element from v1.
+
+\switchocg{W210}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W210}{0}
+\begin{lstlisting}[language = R]
+v1[5:10]
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require D}: The c() function in R is used to combine or concatenate values into a vector. It stands for “combine” or “concatenate”. Add a new observation 1.5 to v1, and calculate the length again.
+
+\switchocg{W211}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W211}{0}
+\begin{lstlisting}[language = R]
+# Add the value 1.5 to the end of the 'v1' vector using the concatenate function 'c'.
+v1 <- c(v1, 1.5) # c for concatenate
+
+# Get the length of the 'v1' vector to see how many elements it contains.
+length(v1)
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Matrix}
+
+\noindent\textbf{Require A}: Use as.matrix(sonar) to convert the sonar data frame into a Matrix? Use is.matrix to check it is indeed a matrix.
+
+\switchocg{W212}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W212}{0}
+\begin{lstlisting}[language = R]
+# Convert the 'sonar' data frame to a matrix.
+sonar_matrix<- as.matrix(sonar)
+
+# Check if 'sonar_matrix' is indeed a matrix.
+is.matrix(sonar_matrix)
+
+str(sonar_matrix)
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require B}: Using the subset() function and select to remove the Class column.
+
+\switchocg{W213}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W213}{0}
+\begin{lstlisting}[language = R]
+sonar_remove <- subset(sonar, select = -Class)
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Numerical summary}
+
+\subsubsection{Summary}
+
+\noindent\textbf{Require}: Use the summary function to extract the median, 1st quartile and 3rd quartile data from the V1 column in sonar data. Given its mean and median, what do you think of the shape of V1 data distribution?
+
+\switchocg{W214}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W214}{0}
+\begin{lstlisting}[language = R]
+summary(sonar$V1)
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Basic statistics}
+
+\noindent\textbf{Require A}: Use max(), min(), sd(), mean() to find the max, min, standard deviation and mean of V1.
+
+\switchocg{W215}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W215}{0}
+\begin{lstlisting}[language = R]
+max(sonar$V1)
+
+min(sonar$V1)
+
+sd(sonar$V1)
+
+mean(sonar$V1)
+\end{lstlisting}
+\end{ocg}
+
+\noindent\textbf{Require B}: The aggregate function can be used to calculate summary statistics for a given level of a categorical variable. Below is an example code that demonstrates how to find the mean sodium for each mfr in the cereal data. Modify the code to find the median V1 of each Class.
+
+\switchocg{W216}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W216}{0}
+\begin{lstlisting}[language = R]
+#| echo: true
+#| code-fold: true
+#| message: false
+
+
+aggregate(V1 ~ Class, data = sonar, FUN = median)
+
+# Alternatively, in tidyverse select the 'V1' and 'Class' columns from the 'sonar' data frame, group by 'Class', and calculate the median content for each group.
+sonar |>
+    select(V1, Class) |>
+    group_by(Class) |>
+    summarise(med = median(V1))
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Graphical Summary}
+
+\subsubsection{Boxplot}
+
+\noindent\textbf{Require}: Make a boxplot of the V1 against Class using boxplot().
+
+\switchocg{W217}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W217}{0}
+\begin{lstlisting}[language = R]
+# Create a boxplot of V1 content by Class using base R.
+# labels for both axes and give a meaningful title
+boxplot(V1 ~ Class, data = sonar,
+        xlab = "Class", ylab = "V1 content", main = "V1 Content by Class")
+
+
+# Using ggplot2.
+
+sonar |> 
+  ggplot(aes(x = Class, y = V1)) + 
+  geom_boxplot() + 
+  theme_classic() + 
+  labs(x =  "Class", y = "V1 content") +
+  ggtitle("V1 Content by Class")
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Scatter Plot}
+
+\noindent\textbf{Require}: Plot V2 against V1 using plot().
+
+\switchocg{W218}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W218}{0}
+\begin{lstlisting}[language = R]
+# Create a scatter plot of calories versus V1 using base R.
+# The plot has the title "Calories versus V1 Scatter Plot".
+plot(V2 ~ V1, data = sonar, main = "V2 versus V1 Scatter Plot")
+
+
+# Create a scatter plot of calories versus V1 using ggplot2.
+# Add a linear regression line without the confidence interval.
+# The plot has the title "Calories versus V1 Scatter Plot".
+sonar |> 
+  ggplot(aes(x = V1, y = V2)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x =  "V1", y = "V2") +
+  ggtitle("V2 versus V1 Scatter Plot")
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Write Data to File}
+
+\noindent\textbf{Require}: Use write.csv to write a data frame containing only the M (medal cylinder) observations to a file called mine.
+
+\switchocg{W219}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W219}{0}
+\begin{lstlisting}[language = R]
+write.csv(mine, here("datasets", "mine.csv"))
+\end{lstlisting}
+\end{ocg}

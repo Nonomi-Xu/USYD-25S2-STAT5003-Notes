@@ -1,0 +1,364 @@
+\subsection{Melbourne house prices regression model}
+
+\indent
+
+In this workshop, we will analyse Melbourne house prices using a dataset from Kaggle (CC BY-NC-SA 4.0 license). We’ll focus on Brunswick, Craigieburn, and Hawthorn to identify factors affecting housing prices.
+
+\subsection{Exploratory Data Analysis}
+
+\subsubsection{Load the data \& Subsetting}
+
+\indent
+
+Download the "Melbourne\_housing\_FULL.csv" from Canvas and read it into R. Create a new data frame melbdata\_sub to focus on the suburbs: Brunswick, Craigieburn, and Hawthorn.
+
+Recap: Last week, we used subset(dataframe, Var name == "certain condition"). In this exercise, we use \%in\% for subsetting multiple conditions.
+
+\switchocg{W301}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W301}{0}
+\begin{lstlisting}[language = R]
+library(readr)
+library(dplyr)
+library(ggplot2) 
+library(here) # The `here` package simplifies the process of constructing file paths in R projects.
+library(tidyr)
+melbdata <- read.csv(here("datasets", "Melbourne_housing_FULL.csv"))
+melbdata |> glimpse() 
+
+## use the baseR 
+melbdata_sub <- subset(melbdata, Suburb %in% c("Hawthorn", "Brunswick", "Craigieburn"))
+
+## tidyverse syntax
+
+melbdata_sub <- melbdata |> 
+  filter(Suburb %in% c("Hawthorn", "Brunswick", "Craigieburn"))
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Summary statistics}
+
+\indent
+
+Begin the analysis by generating quantitative and graphical summaries, similar to Workshop 1. For instance, calculate the average and median prices in each suburb (explore either ?tapply or ?group\_by ). Based on the boxplot, do house prices differ among the three suburbs?
+
+\switchocg{W302}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W302}{0}
+\begin{lstlisting}[language = R]
+# Calculate mean and median prices by suburb
+mean_prices <- tapply(melbdata_sub$Price, melbdata_sub$Suburb, mean, na.rm = TRUE)
+median_prices <- tapply(melbdata_sub$Price, melbdata_sub$Suburb, median, na.rm = TRUE)
+
+# Display the results
+mean_prices
+median_prices
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W303}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W303}{0}
+\begin{lstlisting}[language = R]
+## tidyverse syntax
+melbdata_sub |> 
+  group_by(Suburb) |> 
+  summarise(Mean_Price = mean(Price, na.rm = TRUE), Median_price = median(Price, na.rm = TRUE))
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W304}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W304}{0}
+\begin{lstlisting}[language = R]
+# Create boxplots for each suburb using ggplot2
+melbdata_sub |> ggplot(aes(x = Suburb, y = Price/1000, fill = Suburb)) +
+  geom_boxplot() +
+  labs(title = "Boxplots of Prices by Suburb", x = "Suburb", y = "Price") +
+  scale_fill_manual(values = c("blue", "green", "red"))
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Modelling}
+
+\subsubsection{Finding associations}
+
+\indent
+
+Follow Week 2’s lecture slides to examine the association between house prices (use Price/1000 as the response) and BuildingArea using a simple linear regression. Justify the goodness of fit with and create a scatter plot to assess the model fit.
+
+\switchocg{W305}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W305}{0}
+\begin{lstlisting}[language = R]
+# FORM THE LINEAR REGRESSION MODEL
+lm1 <- lm(data = melbdata_sub, Price/1000 ~ BuildingArea)
+
+# Inspect coefficients
+coef(lm1)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W306}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W306}{0}
+\begin{lstlisting}[language = R]
+lm1 |> coef() #get coefficients
+lm1 |> fitted() |> head() #fitted values
+lm1 |> resid() |> head() #residuals i,e,. errors
+lm1 |> resid() |> mean() #check the mean of the residual is zero. 
+\end{lstlisting}
+\end{ocg}
+
+Consider a scatter plot of Price against BuildingArea and overlay the prediction from the linear regression model.
+
+\switchocg{W307}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W307}{0}
+\begin{lstlisting}[language = R]
+melbdata_sub |> select(BuildingArea, Price) |> drop_na() |> 
+  ggplot(aes(x = BuildingArea, y = Price/1000)) + 
+  geom_point() + geom_smooth(formula = y ~ x, method = "lm", se = FALSE) +
+    theme_classic() + labs(x = "Building area", y = "Price (in $1000s)", title = "Linear Regression Model for House Price")
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W308}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W308}{0}
+\begin{lstlisting}[language = R]
+# Base R to create the scatter plot
+
+plot(Price/1000 ~ BuildingArea, data = melbdata_sub,
+     main = "House prices in Brunswick, Craigieburn and Hawthorn",
+     xlab = "Building Area (in sqm)", ylab = "Price (in 1000s of $AUD)")
+abline(lm1, col = "red", lty = "dotted")
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W309}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W309}{0}
+\begin{lstlisting}[language = R]
+r2 <- round(summary(lm1)$r.squared, 4)
+r2
+\end{lstlisting}
+\end{ocg}
+
+\textbf{Comments}: There is 17\% of the variation in Price explained by the linear regression on Building Area.
+
+\subsubsection{Checking assumptions}
+
+\indent
+
+Diagnostic plots in regression analysis help with assessing the appropriateness of regression models.
+
+Cook’s distance shows how much fitted values change when an observation is removed.
+
+\switchocg{W310}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W310}{0}
+\begin{lstlisting}[language = R]
+## base R to create the diagnostics plots 
+par(mfrow = c(2, 2))
+plot(lm1, which = 1:4)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W311}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W311}{0}
+\begin{lstlisting}[language = R]
+# Tidyverse way
+#library(ggfortify)
+#autoplot(lm1, which = 1:6, nrow = 3, ncol = 2)
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Removing Influential Observations}
+
+\indent 
+
+Remove two influential observations and creating a new dataset melbdata\_clean. Re-fit and re-assess the model.
+
+\switchocg{W312}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W312}{0}
+\begin{lstlisting}[language = R]
+library(ggfortify)
+library(broom)
+
+
+melbdata_clean <- melbdata_sub |> 
+    slice(-c(158,682)) #REMOVE THE WORST TWO OUTLIERS
+
+lm1_alt <- lm(data = melbdata_clean, Price/1000 ~ BuildingArea)
+lm1_alt |> tidy() #conveniently puts summary into tibble format
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W313}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W313}{0}
+\begin{lstlisting}[language = R]
+melbdata_clean |> select(BuildingArea, Price) |> drop_na() |> 
+  ggplot(aes(x = BuildingArea, y = Price/1000)) +
+    geom_point() + geom_smooth(formula = y ~ x, method = "lm", se = FALSE) +
+    theme_classic() + labs(x = "Building area", y = "Price (in $1000s)", title = "Linear Regression Model for House Price \n Without Outliers")
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W314}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W314}{0}
+\begin{lstlisting}[language = R]
+## base R to create the diagnostics plots 
+par(mfrow = c(2, 2))
+plot(lm1_alt, which = 1:4)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W315}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W315}{0}
+\begin{lstlisting}[language = R]
+## tidyverse way
+autoplot(lm1_alt, which = 1:6, nrow = 3, ncol = 2)
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Modelling II}
+
+\subsubsection{Finding association II}
+
+\indent
+
+Use melbdata\_clean to complete the rest of the workshop.
+
+Examine if adding Suburb (categorical) as a predictor to form a multiple linear regression improves house price predictions. Comment on the regression coefficients and create a visualization.
+
+\switchocg{W316}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W316}{0}
+\begin{lstlisting}[language = R]
+## First, examine whether house prices differ significantly among different suburbs.
+# Base R
+boxplot(Price/1000 ~ Suburb, data = melbdata_clean, ylab = "Price (in 1000$)", xlab = "Suburb")
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W317}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W317}{0}
+\begin{lstlisting}[language = R]
+# Tidyverse way
+
+melbdata_clean |> select(Suburb, Price) |> drop_na() |> 
+  ggplot(aes(x = Suburb, y = Price/1000)) + geom_boxplot()
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W318}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W318}{0}
+\begin{lstlisting}[language = R]
+# fitting the MLR 
+lm2 <- lm(data = melbdata_clean, Price/1000 ~ BuildingArea + Suburb)
+
+melbdata_clean |> select(Suburb, Price, BuildingArea) |> drop_na() |>
+  ggplot(aes(x = BuildingArea, y = Price)) +
+  geom_point() +
+  geom_smooth(formula = y ~ x, method = "lm", se = FALSE) +
+  facet_wrap(~Suburb)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W319}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W319}{0}
+\begin{lstlisting}[language = R]
+r2s <- summary(lm2)$r.squared
+r2s 
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W320}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W320}{0}
+\begin{lstlisting}[language = R]
+r2s <- summary(lm2)$r.squared
+coef <- lm2 |>  coef()
+
+
+## extract the rsquares from the simple linear reg based on the cleaned data 
+r2_clean <- lm1_alt |>  glance() |>  pull(r.squared)
+r2_clean
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W321}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W321}{0}
+\begin{lstlisting}[language = R]
+## extract the adjusted rsquares from the MLR for a fair comparison
+adj_r2 <- lm2 |>  glance() |>  pull(adj.r.squared)
+adj_r2
+\end{lstlisting}
+\end{ocg}
+
+\noindent \textbf{Commentary on Models with and without the predictor Suburb}:
+
+The Suburb predictor improves the fit of the model by increasing the $R^2$ from 0.26 to 0.58. However, the adjusted $R^2$ is more appropriate goodness of fit measure when there is more than one predictor in the model since adding another predictor will always increase the $R^2$. In this case, the comparison should be based on the adjusted $R^2$. The adjusted $R^2= 0.57$  implying that adding Suburb improves the model fit.
+
+Interpreting the BuildingArea slope has the interpretation that for each unit increase in square meter of building size, the expected average price would increase by 7.69. Interpreting the categorical predictors needs to be done by intercept adjustment. The first categorical level of Suburb (Brunswick) becomes the baseline intercept and the other suburbs are adjusted against the baseline intercept. In this case Craigieburn and Hawthorn have adjustments of -824 and 365 respectively. This should be interpreted that properties in Craigieburn are -824 dollars cheaper than Brunswick on average (if BuildingArea is held fixed). Hawthorn properties are 365 dollars more expensive than Brunswick. This is consistent with the graphical summary in the boxplot which indicates without adjusting for Building Area, Craigie burn tends to have cheaper houses with low variance while Hawthorn has a large variance in house prices with many very expensive outlying properties.
+
+\bigskip
+
+There are many other variables in the data, you might consider whether adding the number of car spaces as a third predictor improve the prediction model?
+
+\switchocg{W322}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W322}{0}
+\begin{lstlisting}[language = R]
+lm3 <- lm(data = melbdata_clean, Price ~ BuildingArea + Suburb + Car)
+summary(lm3)
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Impact of outliers}
+
+\indent 
+
+Model construction can be affected by unwanted variation and noise such as outliers. Using subset to remove outliers (building $\text{areas} \leq 5$ sqm or $> 300$ sqm) from melbdata\_clean and assign the new data set to melbdata\_clean2.
+
+A challenge for you: In your spare time, generate the above outputs using tidyverse syntax
+
+\switchocg{W323}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W323}{0}
+\begin{lstlisting}[language = R]
+# Remove outliers based on building area
+melbdata_clean2 <- subset(melbdata_clean, BuildingArea > 5 & BuildingArea <= 300)
+
+# Fit new regression line
+lm4 <- lm(Price/1000 ~ BuildingArea + Suburb, data = melbdata_clean2 )
+
+# Plot original data and regression line
+plot(melbdata_clean$BuildingArea, melbdata_clean$Price/1000, main = "Building Area vs Price", xlab = "Building Area (sqm)", ylab = "Price")
+abline(lm2, col = "blue")
+
+# Add new regression line
+abline(lm4, col = "red")
+legend("topright", legend = c("Original", "Without Outliers"), col = c("blue", "red"), lty = 0.5)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W324}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W324}{0}
+\begin{lstlisting}[language = R]
+summary(lm4)
+\end{lstlisting}
+\end{ocg}
+
+Removing the outliers does improve the fit of the model as the overall residual standard error has decreased and the goodness of fit metrics have increased to around 0.6. Also visually we can see an improved fit for Hawthorn and Brunswick. Although there still is a poor fit for Cragieburn.

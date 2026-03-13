@@ -1,0 +1,452 @@
+\subsection{Workshop preparation}
+
+\subsubsection{Loading packages}
+
+\indent 
+
+At the start of your R workshop, load all necessary packages to ensure a smooth session. Here’s an example:
+
+\switchocg{W701}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W701}{0}
+\begin{lstlisting}[language=R]
+library(tidyverse)  # Data science packages
+library(ggplot2)    # Data visualization
+library(here)       # File paths
+library(mlbench)    # Getting the Sonar data set
+library(caret)      # Perform Cross-Validation
+library(class)      # knn algorithm
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Data Set}
+
+\indent 
+
+This week, we will be exploring cross validation and its effect on the estimated error.
+
+We will be using the Sonar data set and it is included as part of the mlbench package. To load the data, do the following:
+
+\switchocg{W702}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W702}{0}
+\begin{lstlisting}[language=R]
+# Load the mlbench package
+# Load the data set
+data(Sonar, package = "mlbench")
+\end{lstlisting}
+\end{ocg}
+
+There are two classes where “R” stands for rock (negative class) and “M” stands for metal (positive class). We want to use machine learning models to detect metal mines (M). (By default, R determines which one is the positive class according to the alphabetical order.)
+
+\subsubsection{Visualise Sonar data}
+
+\indent 
+
+Before fitting the model, it is crucial to examine the data. This step is especially important for knn, since the algorithm relies on distance calculations, and features must be on comparable scales for these distances to be meaningful.
+
+\switchocg{W703}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W703}{0}
+\begin{lstlisting}[language=R]
+library(caret)
+library(MASS)
+library(class)
+
+set.seed(5003)
+
+boxplot(Sonar[-61]) ## column 61 is the outcome
+\end{lstlisting}
+\end{ocg}
+
+Discuss with your peers, what kind of data pre-processing is needed here and should it be done before or after splitting the data?
+
+\subsection{Create a 10-fold cross-validation}
+
+\indent 
+
+Design a 10-fold cross-validation procedure to evaluate a kNN classification model (with $k=5$) accuracy. Use class::knn() for implementing a kNN model and use the caret package create validation cross fold partitions.
+
+\subsubsection{Compute the predicted values on a single sub-fold}
+
+\indent
+
+Use the createFolds() function from the caret package to generate the 10 folds required for cross-validation (see ?createFolds for guidance). Using the provided template code, fit a k-NN model on one fold: train the model on 90\% of the data and test it on the remaining 10%.
+
+Since the boxplot shows that features have different variances, you should scale the predictors. To avoid data leakage, perform scaling after the train–test split:
+
+\begin{itemize}
+    \item Fit the scaling parameters on the training set,
+    \item Apply the same transformation to the test set.
+    \item Extract the observed and predicted class labels.
+    \item Compute and report the confusion matrix and the percentage accuracy of your model.
+\end{itemize}
+
+\switchocg{W704}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W704}{0}
+\begin{lstlisting}[language=R]
+set.seed(5003)
+y = Sonar |> pull(Class)
+X = Sonar |> dplyr::select(-Class)
+n = length(y)
+
+fold <- createFolds(Sonar$Class, k = 10)
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W705}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W705}{0}
+\begin{lstlisting}[language=R]
+set.seed(5003)
+fold <- createFolds(Sonar$Class, k = 10)
+
+# One instance
+test_id = fold$Fold01 # Selecting 10% of the data as test set
+
+# Split data
+test_id  <- fold$Fold01
+X_test   <- X[test_id, ]
+X_train  <- X[-test_id, ]
+y_train <- y[-test_id]
+y_test <- y[test_id]
+
+
+# Center and scale training data
+X_train_scaled <- scale(X_train)
+
+# Extract scaling attributes
+train_means <- attr(X_train_scaled, "scaled:center")
+train_sds   <- attr(X_train_scaled, "scaled:scale")
+
+# Apply same transformation to test set
+X_test_scaled <- scale(X_test, center = train_means, scale = train_sds)
+\end{lstlisting}
+\end{ocg}
+
+Alternatively, you can use preProcess function from caret package to pre-process the data on the traininng set \& apply the same transformation to the test set.
+
+\switchocg{W706}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W706}{0}
+\begin{lstlisting}[language=R]
+pp <- preProcess(X_train, method = c("center", "scale"))
+X_train_scaled <- predict(pp, X_train)   # uses training means/sds
+X_test_scaled <- predict(pp, X_test)    # applies SAME transformation
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W707}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W707}{0}
+\begin{lstlisting}[language=R]
+knn5 = knn(train = X_train_scaled, test = X_test_scaled, cl = y_train, k = 5)
+table(knn5, y_test) # Confusion matrix
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W708}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W708}{0}
+\begin{lstlisting}[language=R]
+mean(knn5 == y_test) # Accuracy
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W709}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W709}{0}
+\begin{lstlisting}[language=R]
+## alternatively use the built-in function 
+confusionMatrix(knn5, y_test) ## notice that the algorithm takes "M" as the positive class
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Compute the predicted values and accuracy on all sub-folds}
+
+\indent 
+
+Now repeat this process on all 10 sub-folds, generating 10 different accuracy scores for each sub fold. Use a for loop along with your code from the previous section to accomplish this. Use k = 5 for your knn algorithm. Template code has again, been provided below:
+
+\switchocg{W710}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W710}{0}
+\begin{lstlisting}[language=R]
+cv_acc = NA  # initialise results vector
+
+for (j in 1:K) {
+    test_id = <write your own code>
+    X_test = X[test_id, ]
+    X_train = X[-test_id, ]
+    
+    # Center and scale training data
+        X_train_scaled <- scale(write your own code)
+    
+        # Extract scaling attributes
+        train_means <- attr(X_train_scaled, "scaled:center")
+        train_sds   <- attr(X_train_scaled, "scaled:scale")
+    
+        # Apply same transformation to test set
+        X_test_scaled <- scale(write your own code)
+    
+    
+        y_test = y[test_id]
+        y_train = y[-test_id]
+    
+    
+    fit = class::knn(<write your own code>, k = 5)
+    cv_acc[j] = <write your own code>
+}
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W711}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W711}{0}
+\begin{lstlisting}[language=R]
+set.seed(5003)
+cv_acc =  NA  # initialise results vector
+fold <- createFolds(Sonar$Class, k = 10)
+
+for (j in 1:10) {
+    test_id = fold[[j]]
+    X_test = X[test_id, ]
+    X_train = X[-test_id, ]
+    
+    # Center and scale training data
+    X_train_scaled <- scale(X_train)
+    
+    # Extract scaling attributes
+    train_means <- attr(X_train_scaled, "scaled:center")
+    train_sds   <- attr(X_train_scaled, "scaled:scale")
+    
+    # Apply same transformation to test set
+    X_test_scaled <- scale(X_test, center = train_means, scale = train_sds)
+    
+    
+    y_test = y[test_id]
+    y_train = y[-test_id]
+    
+    fit = class::knn(train = X_train_scaled, test = X_test_scaled, cl = y_train, k = 5)
+    cv_acc[j] = mean(fit == y_test)
+    
+    ## alternatively, can extract from the confusion matrix directly 
+    ## cv_acc[j] = confusionMatrix(fit, y_test)$overall[1]
+}
+\end{lstlisting}
+\end{ocg}
+
+\subsubsection{Compute other performance metrics}
+
+You have now calculated the accuracy of each fold for the kNN classifier. Now, using the predicted and observed values in each case, also calculate the sensitivity, specificity, and  score for the kNN classifier. You may use the caret::confusionMatrix or an equivalent helper function from another package if you wish.
+
+For your own understanding, it is recommended to manually calculate these metrics without using a helper function. Output all of these metrics in a table and identify whether our model has good/bad performance in the metrics.
+
+Template code has been given below:
+
+\switchocg{W712}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W712}{0}
+\begin{lstlisting}[language=R]
+cv_acc = NA  # initialise accuracy vector
+cv_sens = NA  # initialise sensitivity vector
+cv_spec = NA  # initialise specificity vector
+cv_f1 = NA  # initialise F1 score vector
+
+for (j in 1:10) {
+    test_id = <write your own code>
+    X_test = X[test_id, ]
+    X_train = X[-test_id, ]
+    # Center and scale training data
+    X_train_scaled <- scale(X_train)
+    
+    # Extract scaling attributes
+    train_means <- attr(X_train_scaled, "scaled:center")
+    train_sds   <- attr(X_train_scaled, "scaled:scale")
+    
+    # Apply same transformation to test set
+    X_test_scaled <- scale(X_test, center = train_means, scale = train_sds)
+    
+    y_test = <write your own code>
+    y_train = <write your own code>
+    fit = class::knn(<write your own code>, k = 5)
+   
+    cv_acc[j] = <write your own code> # Accuracy
+    cv_sens[j] = <write your own code> # Sensitivity
+    cv_spec[j] = <write your own code> # Specificity
+    cv_f1[j] = <write your own code> # F1
+}
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W713}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W713}{0}
+\begin{lstlisting}[language=R]
+cv_acc = NA  # initialise accuracy vector
+cv_sens = NA  # initialise sensitivity vector
+cv_spec = NA  # initialise specificity vector
+cv_f1 = NA  # initialise F1 score vector
+
+
+set.seed(5003)
+## RStudio b default using M as the positive class.
+for (j in 1:10) {
+test_id = fold[[j]]
+X_test = X[test_id, ]
+X_train = X[-test_id, ]
+
+# Center and scale training data
+    X_train_scaled <- scale(X_train)
+    
+    # Extract scaling attributes
+    train_means <- attr(X_train_scaled, "scaled:center")
+    train_sds   <- attr(X_train_scaled, "scaled:scale")
+    
+    # Apply same transformation to test set
+    X_test_scaled <- scale(X_test, center = train_means, scale = train_sds)
+    
+y_test = y[test_id]
+y_train = y[-test_id]
+fit = class::knn(train = X_train_scaled, test = X_test_scaled, cl = y_train, k = 5)
+
+cv_acc[j] = mean(fit == y_test) # Accuracy
+cv_sens[j] = mean(fit == "M" & y_test == "M")/mean(y_test == "M") # Sensitivity
+cv_spec[j] = mean(fit == "R" & y_test == "R")/mean(y_test == "R") # Specificity
+cv_precision = mean(fit == "M" & y_test == "M")/mean(fit == "M") # Precision (needed to calculate F1)
+cv_f1[j] = 2 * (cv_precision * cv_sens[j])/(cv_precision + cv_sens[j])
+}
+
+
+## automatic way via confusionMatrix 
+
+for (j in 1:10) {
+    test_id = fold[[j]]
+    X_test = X[test_id, ]
+    X_train = X[-test_id, ]
+    
+    # Center and scale training data
+    X_train_scaled <- scale(X_train)
+    
+    # Extract scaling attributes
+    train_means <- attr(X_train_scaled, "scaled:center")
+    train_sds   <- attr(X_train_scaled, "scaled:scale")
+    
+    # Apply same transformation to test set
+    X_test_scaled <- scale(X_test, center = train_means, scale = train_sds)
+    
+    y_test = y[test_id]
+    y_train = y[-test_id]
+    fit = class::knn(train = X_train_scaled, test = X_test_scaled, cl = y_train, k = 5)
+    cv_acc[j] = confusionMatrix(fit, y_test)$overall[1] # Accuracy
+    cv_sens[j] =confusionMatrix(fit, y_test)$byClass[1]# Sensitivity
+    cv_spec[j] = confusionMatrix(fit, y_test)$byClass[2] # Specificity
+    cv_precision = confusionMatrix(fit, y_test)$byClass[5] # Precision (needed to calculate F1)
+    cv_f1[j] = confusionMatrix(fit, y_test)$byClass[7]
+}
+
+
+boxplot(cv_acc, cv_sens, cv_spec, cv_f1, names = c("Accuracy", "Sensitivity", "Specificity", "F1"))
+\end{lstlisting}
+\end{ocg}
+
+\subsection{Compute repeated 10-fold cross validation}
+
+Use your code above to conduct a repeated cross validation of say m = 50 runs (or however many you wish given the speed of your code or computation power of your hardware) to construct a sample of CV performance estimates for Accuracy, Sensitivity, Specificity, and the F1 scores. Visualize your estimates and comment on the different metrics and any practical implications. You may use the caret::createMultiFolds or create your own if you wish. The createMultiFolds function returns the data in a slightly different format (see the documentation at ?createMultiFolds).
+
+\switchocg{W714}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W714}{0}
+\begin{lstlisting}[language=R]
+set.seed(5003)
+cvK = 10  # define the number of CV folds
+cv_acc10_50times = cv_acc_5 = c()
+cv_sens10_50times = cv_sens_5 = c()
+cv_spec10_50times = cv_spec_5 = c()
+cv_f10_50times = cv_f1_5 = c()
+
+for (i in 1:50) {
+
+    ## mainly for debugging.
+    if (i%%10 == 0) {
+        print(i)
+    }
+
+ 
+    fold <- createFolds(Sonar$Class, k = cvK)
+
+    
+    for (j in 1:cvK) {
+        test_id = fold[[j]]
+        X_test = X[test_id, ]
+        X_train = X[-test_id, ]
+        # Center and scale training data
+    X_train_scaled <- scale(X_train)
+    
+    # Extract scaling attributes
+    train_means <- attr(X_train_scaled, "scaled:center")
+    train_sds   <- attr(X_train_scaled, "scaled:scale")
+    
+    # Apply same transformation to test set
+    X_test_scaled <- scale(X_test, center = train_means, scale = train_sds)
+    
+        y_test = y[test_id]
+        y_train = y[-test_id]
+        fit5 = class::knn(train = X_train_scaled, test = X_test_scaled, cl = y_train, k = 5)
+        cv_acc_5[j] =  mean(fit5 == y_test) # Accuracy
+        cv_sens_5[j] = mean(fit5 == "M" & y_test == "M")/mean(y_test == "M") # Sensitivity
+        cv_spec_5[j] = mean(fit5 == "R" & y_test == "R")/mean(y_test == "R") # Specificity
+        cv_precision = mean(fit5 == "M" & y_test == "M")/mean(fit5 == "M") # Precision (needed to calculate F1)
+        cv_f1_5[j] = 2 * (cv_precision * cv_sens_5[j])/(cv_precision + cv_sens_5[j]) # F1 Score
+    }
+    cv_acc10_50times <- append(cv_acc10_50times, mean(cv_acc_5))
+    cv_sens10_50times <- append(cv_sens10_50times, mean(cv_sens_5))
+    cv_spec10_50times <- append(cv_spec10_50times, mean(cv_spec_5))
+    cv_f10_50times <- append(cv_f10_50times, mean(cv_f1_5))
+}
+\end{lstlisting}
+\end{ocg}
+
+\switchocg{W715}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W715}{0}
+\begin{lstlisting}[language=R]
+boxplot(cv_acc10_50times, cv_sens10_50times, cv_spec10_50times, cv_f10_50times, names = c("Accuracy", "Sensitivity", "Specificity", "F1"), 
+        main = "Positive Class: Rock")
+\end{lstlisting}
+\end{ocg}
+
+Alternatively, the train function in caret package can do it for you in fewer lines of code, but we want to you to code it up in loop first, as it gives you some insights of what is going on behind the scene.
+
+\switchocg{W716}{\fbox{\textbf{Fold/Unfold}}}
+
+\begin{ocg}{}{W716}{0}
+\begin{lstlisting}[language=R]
+set.seed(5003)
+
+# --- TrainControl with 50 × 10-fold ---
+ctrl <- trainControl(
+  method = "repeatedcv",
+  number = 10,     # 10 folds
+  repeats = 50,    # repeat 50 times
+  classProbs = TRUE,
+  summaryFunction = twoClassSummary,  # to get ROC, Sens, Spec
+  savePredictions = "final"
+)
+
+
+# --- Fit kNN (k = 5 fixed) ---
+knn_fit <- train(
+    x = X,
+    y = y,
+    method = "knn",
+    tuneGrid = data.frame(k = 5),  # fix k = 5
+    preProcess = c("center", "scale"), # apply both centre and scale on the features
+    trControl = ctrl,
+    metric = c("Accuracy")             # or "ROC" if using probs
+)
+
+knn_fit
+\end{lstlisting}
+\end{ocg}
